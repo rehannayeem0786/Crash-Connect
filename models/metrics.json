@@ -1,0 +1,37 @@
+{
+  "accuracy": 0.993125,
+  "f1_weighted": 0.9931186880936519,
+  "precision_weighted": 0.9931677787162161,
+  "recall_weighted": 0.993125,
+  "cv_f1_mean": 0.9957476297284087,
+  "cv_f1_std": 0.0016496908207556049,
+  "confusion_matrix": [
+    [
+      393,
+      0,
+      0
+    ],
+    [
+      0,
+      978,
+      4
+    ],
+    [
+      7,
+      0,
+      218
+    ]
+  ],
+  "feature_importances": {
+    "speed": 0.2198792998190888,
+    "impact_score": 0.21598368100414223,
+    "acceleration": 0.21002232629018797,
+    "gps_status": 0.19150556781635542,
+    "battery_status": 0.16260912507022557
+  },
+  "class_labels": [
+    "CRITICAL",
+    "NORMAL",
+    "WARNING"
+  ]
+}

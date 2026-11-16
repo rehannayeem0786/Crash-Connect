@@ -1,0 +1,88 @@
+{
+  "models": {
+    "Random Forest": {
+      "accuracy": 0.993125,
+      "f1_weighted": 0.9931186880936519,
+      "precision_weighted": 0.9931677787162161,
+      "recall_weighted": 0.993125,
+      "cv_f1_mean": 0.9957476297284087,
+      "cv_f1_std": 0.0016496908207556049,
+      "train_time_s": 0.37634921073913574,
+      "confusion_matrix": [
+        [
+          393,
+          0,
+          0
+        ],
+        [
+          0,
+          978,
+          4
+        ],
+        [
+          7,
+          0,
+          218
+        ]
+      ]
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.999375,
+      "f1_weighted": 0.9993752948154844,
+      "precision_weighted": 0.9993777654867256,
+      "recall_weighted": 0.999375,
+      "cv_f1_mean": 0.9977506229841744,
+      "cv_f1_std": 0.0012246197491018352,
+      "train_time_s": 4.180081844329834,
+      "confusion_matrix": [
+        [
+          392,
+          0,
+          1
+        ],
+        [
+          0,
+          982,
+          0
+        ],
+        [
+          0,
+          0,
+          225
+        ]
+      ]
+    },
+    "SVM (RBF)": {
+      "accuracy": 0.97125,
+      "f1_weighted": 0.9718403793111812,
+      "precision_weighted": 0.9732155765920826,
+      "recall_weighted": 0.97125,
+      "cv_f1_mean": 0.9736616510829149,
+      "cv_f1_std": 0.0032739772876635097,
+      "train_time_s": 0.5832879543304443,
+      "confusion_matrix": [
+        [
+          374,
+          0,
+          19
+        ],
+        [
+          0,
+          966,
+          16
+        ],
+        [
+          11,
+          0,
+          214
+        ]
+      ]
+    }
+  },
+  "best_model": "Gradient Boosting",
+  "class_labels": [
+    "CRITICAL",
+    "NORMAL",
+    "WARNING"
+  ]
+}
