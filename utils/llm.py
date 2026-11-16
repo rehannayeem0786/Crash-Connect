@@ -7,6 +7,10 @@ Falls back to rule-based responses when no API key is available.
 import os
 import json
 from typing import Optional, Dict, List
+from dotenv import load_dotenv
+
+# Load .env file from project root
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
 # === API Configuration ===
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
