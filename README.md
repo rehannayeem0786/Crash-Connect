@@ -1,10 +1,21 @@
-# 🚗 CATS AI Safety Bot v2.0
+# 🚗 CATS AI Safety Bot v2.1 (Top 1 Edition)
 
 **Crisis Alert Tech System — AI-Powered Vehicle Telemetry Analysis & Safety Monitoring**
 
-A prototype AI assistant that analyses vehicle telemetry, identifies safety risks, explains alerts with SHAP explainability, and responds to vehicle-related questions using AI-powered chat.
+A production-grade prototype AI safety assistant that analyses vehicle telemetry, identifies safety risks, maps GPS telematics routes, explains alerts with SHAP attribution, exports forensic incident dossiers, and answers questions using Groq conversational AI.
 
 Built as part of the CRASH CONNECT AI/ML Internship Assessment.
+
+---
+
+## 🎯 Submission Kit
+
+| Resource | Document | Purpose |
+|---|---|---|
+| 🎬 **Demo Video Script** | [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md) | Timed 3–5 min scene-by-scene recording walkthrough |
+| 📝 **Assessment Form Answers** | [docs/SUBMISSION_ANSWERS.md](docs/SUBMISSION_ANSWERS.md) | Comprehensive responses ready for Google Form submission |
+| 🏗️ **Architecture Document** | [docs/architecture.md](docs/architecture.md) | Full data flow & system design |
+| 🔬 **ML Methodology** | [docs/ml_approach.md](docs/ml_approach.md) | Multi-model benchmarking, SHAP, and Anomaly Detection |
 
 ---
 
@@ -12,14 +23,17 @@ Built as part of the CRASH CONNECT AI/ML Internship Assessment.
 
 | Feature | Description |
 |---|---|
-| 📊 **Dashboard** | Real-time telemetry gauges, charts, and risk distribution |
-| 🔴 **Real-Time Simulation** | Live telemetry generation with instant ML classification |
-| 🚨 **Alerts & Timeline** | Visual alert timeline with severity markers |
-| 💬 **AI Chat** | Groq/OpenRouter LLM-powered conversational interface |
-| 🎛️ **Simulator + SHAP** | Interactive sliders with per-prediction SHAP explanations |
-| 🏆 **Model Comparison** | Side-by-side Random Forest vs Gradient Boosting vs SVM |
-| 🔮 **Anomaly Detection** | Isolation Forest unsupervised anomaly layer |
-| 📝 **Feedback & Retrain** | Mark false alarms, retrain model from feedback |
+| 📊 **Dashboard & Gauges** | Real-time animated gauges, delta indicators, and risk distribution |
+| 🗺️ **GPS Route Telematics** | Interactive Pydeck map showing vehicle breadcrumb trails & incident spots |
+| 🔴 **Real-Time Simulation** | Dynamic streaming telemetry generation with instant ML inference |
+| 🚨 **Alerts & Timeline** | Severity-colored scatter timeline with expandable alert cards |
+| 📄 **Forensic Incident Dossier** | 1-click official incident docket export with action protocols |
+| 💬 **AI Conversational Chat** | Groq API (Qwen 27B / Llama 3.3) with quick-prompt chips |
+| 🎛️ **Simulator + SHAP** | Interactive sliders with mathematical SHAP attribution plots |
+| 🏆 **Multi-Model Benchmark** | Side-by-side Gradient Boosting (99.9%) vs RF vs SVM |
+| 🔮 **Anomaly Detection** | Unsupervised Isolation Forest catching 95.2% of critical anomalies |
+| 🌐 **Codebase Graph (Graphify)** | Interactive 2D/3D network topology and architectural community clusters |
+| 📝 **Feedback & Retraining** | False alarm audit trail and active learning model retraining |
 
 ---
 

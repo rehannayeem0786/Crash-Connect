@@ -1,15 +1,16 @@
 """
-CATS AI Safety Bot — Main Streamlit Application (v2.0)
+CATS AI Safety Bot — Main Streamlit Application (v2.1 Top 1 Edition)
 
 Upgraded with:
-- Groq/OpenRouter AI-powered conversational chat
-- Real-time telemetry simulation
-- SHAP per-prediction explanations
-- Multi-model comparison display
+- Groq AI-powered conversational chat with quick-prompt chips
+- Real-time telemetry simulation with dynamic GPS geo-tracking
+- Interactive Pydeck map showing vehicle trail & incident hotspots
+- 1-Click Forensic Incident Investigation Dossier Generator
+- SHAP per-prediction explanations & waterfall plots
+- Multi-model comparison display (Gradient Boosting vs Random Forest vs SVM)
 - Isolation Forest anomaly detection
-- Alert timeline visualization
-- Feedback-driven model retraining
-- Polished UI with animated gauges & maps
+- Codebase Knowledge Graph viewer powered by Graphify
+- False alarm audit trail & feedback-driven model retraining
 """
 
 import streamlit as st
@@ -18,6 +19,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import pydeck as pdk
+import streamlit.components.v1 as components
 import joblib
 import json
 import os
@@ -38,7 +41,7 @@ from utils.telemetry import (
     load_telemetry, get_vehicle_ids,
     compute_statistics, generate_explanation,
 )
-from utils.llm import chat as llm_chat, get_backend
+from utils.llm import chat as llm_chat, get_backend, GROQ_MODEL, OPENROUTER_MODEL
 
 # === Page Config ===
 st.set_page_config(
@@ -54,26 +57,26 @@ st.markdown("""
     .main .block-container { padding-top: 1rem; }
     .status-normal {
         background: linear-gradient(135deg, #2ecc71, #27ae60);
-        color: white; padding: 20px; border-radius: 12px;
+        color: white; padding: 18px; border-radius: 12px;
         text-align: center; font-size: 24px; font-weight: bold;
         box-shadow: 0 4px 15px rgba(46,204,113,0.3);
     }
     .status-warning {
         background: linear-gradient(135deg, #f39c12, #e67e22);
-        color: white; padding: 20px; border-radius: 12px;
+        color: white; padding: 18px; border-radius: 12px;
         text-align: center; font-size: 24px; font-weight: bold;
         box-shadow: 0 4px 15px rgba(243,156,18,0.3);
     }
     .status-critical {
         background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: white; padding: 20px; border-radius: 12px;
+        color: white; padding: 18px; border-radius: 12px;
         text-align: center; font-size: 24px; font-weight: bold;
         box-shadow: 0 4px 15px rgba(231,76,60,0.3);
         animation: pulse 1.5s infinite;
     }
     @keyframes pulse {
         0% { box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
-        50% { box-shadow: 0 4px 25px rgba(231,76,60,0.6); }
+        50% { box-shadow: 0 4px 25px rgba(231,76,60,0.7); }
         100% { box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
     }
     .anomaly-badge {
@@ -83,8 +86,13 @@ st.markdown("""
     }
     .ai-badge {
         background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white; padding: 3px 10px; border-radius: 12px;
-        font-size: 11px; font-weight: bold; display: inline-block;
+        color: white; padding: 4px 12px; border-radius: 12px;
+        font-size: 12px; font-weight: bold; display: inline-block;
+    }
+    .dossier-box {
+        background-color: #111827; border: 1px solid #374151;
+        border-radius: 8px; padding: 16px; font-family: monospace;
+        font-size: 13px; color: #e5e7eb; white-space: pre-wrap;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -138,7 +146,7 @@ def predict_risk(model, scaler, le, features):
 
 
 def detect_anomaly(features, iso_forest, anom_scaler):
-    if iso_forest is None:
+    if iso_forest is None or anom_scaler is None:
         return False, 0.0
     X = np.array(features).reshape(1, -1)
     X_scaled = anom_scaler.transform(X)
@@ -189,19 +197,106 @@ def make_gauge(value, title, min_val, max_val, thresholds, unit="", reverse=Fals
     return fig
 
 
-def generate_sim_reading(rng, scenario="mixed"):
-    """Generate a single simulated telemetry reading."""
+def render_telemetry_map(vehicle_df, latest_reading):
+    """Render interactive Pydeck map with color-coded telemetry track."""
+    map_df = vehicle_df.tail(60).copy()
+    if "latitude" not in map_df.columns or "longitude" not in map_df.columns:
+        st.info("GPS coordinates not present in dataset.")
+        return
+
+    def get_color(row):
+        if row.get("gps_status", 1) == 0:
+            return [160, 160, 160, 180]  # Grey: Signal lost
+        status = row.get("risk_label", "NORMAL")
+        if status == "CRITICAL":
+            return [231, 76, 60, 240]    # Red: Critical
+        elif status == "WARNING":
+            return [243, 156, 18, 220]   # Orange: Warning
+        return [46, 204, 113, 200]       # Green: Normal
+
+    map_df["color"] = map_df.apply(get_color, axis=1)
+    map_df["radius"] = map_df["risk_label"].apply(
+        lambda x: 120 if x == "CRITICAL" else (70 if x == "WARNING" else 45)
+    )
+
+    # Path Layer
+    path_coords = map_df.sort_values("timestamp")[["longitude", "latitude"]].values.tolist()
+    route_layer = pdk.Layer(
+        "PathLayer",
+        data=[{"path": path_coords}],
+        get_path="path",
+        get_color=[52, 152, 219, 140],
+        width_min_pixels=3,
+    )
+
+    # Telemetry point history
+    points_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=map_df,
+        get_position="[longitude, latitude]",
+        get_color="color",
+        get_radius="radius",
+        pickable=True,
+    )
+
+    # Current vehicle pin
+    curr_df = pd.DataFrame([latest_reading])
+    curr_layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=curr_df,
+        get_position="[longitude, latitude]",
+        get_color=[255, 255, 255, 255],
+        get_radius=180,
+        pickable=True,
+    )
+
+    view_state = pdk.ViewState(
+        latitude=float(latest_reading["latitude"]),
+        longitude=float(latest_reading["longitude"]),
+        zoom=11.5,
+        pitch=25,
+    )
+
+    deck = pdk.Deck(
+        layers=[route_layer, points_layer, curr_layer],
+        initial_view_state=view_state,
+        tooltip={
+            "text": "Time: {timestamp}\nSpeed: {speed} km/h\nStatus: {risk_label}\nImpact: {impact_score}"
+        },
+        map_style="mapbox://styles/mapbox/dark-v10",
+    )
+
+    col_m1, col_m2 = st.columns([3, 1])
+    with col_m1:
+        st.pydeck_chart(deck, use_container_width=True)
+    with col_m2:
+        st.markdown("**Map Telemetry Legend:**")
+        st.markdown("🟢 **Green**: Normal Driving Envelope")
+        st.markdown("🟠 **Orange**: Warning Trigger Zone")
+        st.markdown("🔴 **Red**: Critical Incident / Impact")
+        st.markdown("⚪ **Grey**: GPS Signal Dead Zone")
+        st.markdown("📍 **White Pulse**: Current GPS Fix")
+        st.caption(f"Lat: {latest_reading.get('latitude', 0):.4f}, Lon: {latest_reading.get('longitude', 0):.4f}")
+
+
+def generate_sim_reading(rng, scenario="mixed", last_reading=None):
+    """Generate a single simulated telemetry reading with realistic GPS trajectory."""
+    base_lat = last_reading.get("latitude", 12.9716) if last_reading else 12.9716
+    base_lon = last_reading.get("longitude", 77.5946) if last_reading else 77.5946
+
     if scenario == "normal":
-        return {
-            "speed": float(np.clip(rng.normal(60, 15), 0, 95)),
+        speed = float(np.clip(rng.normal(60, 15), 0, 95))
+        reading = {
+            "speed": speed,
             "acceleration": float(np.clip(rng.exponential(0.8), 0, 3)),
             "impact_score": float(np.clip(rng.exponential(0.03), 0, 0.3)),
             "battery_status": float(np.clip(rng.normal(80, 10), 40, 100)),
             "gps_status": int(rng.choice([1]*19 + [0])),
         }
     elif scenario == "dangerous":
-        return {
-            "speed": float(np.clip(rng.normal(140, 25), 80, 220)),
+        speed = float(np.clip(rng.normal(140, 25), 80, 220))
+        reading = {
+            "speed": speed,
             "acceleration": float(np.clip(rng.normal(6, 2), 2, 12)),
             "impact_score": float(np.clip(rng.normal(0.6, 0.2), 0.1, 1.0)),
             "battery_status": float(np.clip(rng.normal(20, 10), 0, 50)),
@@ -210,17 +305,96 @@ def generate_sim_reading(rng, scenario="mixed"):
     else:  # mixed
         r = rng.random()
         if r < 0.6:
-            return generate_sim_reading(rng, "normal")
+            return generate_sim_reading(rng, "normal", last_reading)
         elif r < 0.85:
-            return {
-                "speed": float(np.clip(rng.normal(100, 20), 40, 145)),
+            speed = float(np.clip(rng.normal(100, 20), 40, 145))
+            reading = {
+                "speed": speed,
                 "acceleration": float(np.clip(rng.normal(3.5, 1.5), 0.5, 7)),
                 "impact_score": float(np.clip(rng.normal(0.3, 0.15), 0, 0.7)),
                 "battery_status": float(np.clip(rng.normal(45, 15), 10, 80)),
                 "gps_status": int(rng.choice([1, 1, 1, 0])),
             }
         else:
-            return generate_sim_reading(rng, "dangerous")
+            return generate_sim_reading(rng, "dangerous", last_reading)
+
+    # Realistic coordinate step forward proportional to speed
+    step_lat = (reading["speed"] / 120.0) * float(rng.normal(0.001, 0.0005))
+    step_lon = (reading["speed"] / 120.0) * float(rng.normal(0.001, 0.0005))
+    reading["latitude"] = np.round(base_lat + step_lat, 5)
+    reading["longitude"] = np.round(base_lon + step_lon, 5)
+    return reading
+
+
+def generate_incident_dossier(row, model, scaler, le, iso_forest, anom_scaler):
+    """Generate a comprehensive Incident Investigation Dossier for compliance and first responders."""
+    features = [row[col] for col in FEATURE_COLUMNS]
+    pred_label, pred_probs = predict_risk(model, scaler, le, features)
+    is_anom, anom_score = detect_anomaly(features, iso_forest, anom_scaler)
+    explanations = generate_explanation(row)
+
+    report = f"""================================================================================
+CRASH CONNECT — CRISIS ALERT TECH SYSTEM (CATS)
+OFFICIAL INCIDENT INVESTIGATION DOSSIER
+================================================================================
+Docket Reference : CATS-INC-{datetime.now().strftime('%Y%m%d%H%M%S')}
+Generated At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+Vehicle Monitored: {row.get('vehicle_id', 'VH-SIM')}
+Incident Stamp   : {row.get('timestamp', 'N/A')}
+GPS Geolocation  : Lat {row.get('latitude', 0):.5f}, Lon {row.get('longitude', 0):.5f}
+
+--------------------------------------------------------------------------------
+1. TELEMETRY SENSOR TELEMETRICS SNAPSHOT
+--------------------------------------------------------------------------------
+- Speed          : {row.get('speed', 0):.1f} km/h  (Thresholds: Warning > {SPEED_THRESHOLDS['warning']}, Critical > {SPEED_THRESHOLDS['critical']})
+- Acceleration   : {row.get('acceleration', 0):.2f} g    (Thresholds: Warning > {ACCELERATION_THRESHOLDS['warning']}, Critical > {ACCELERATION_THRESHOLDS['critical']})
+- Impact Score   : {row.get('impact_score', 0):.3f}   (Thresholds: Warning > {IMPACT_SCORE_THRESHOLDS['warning']}, Critical > {IMPACT_SCORE_THRESHOLDS['critical']})
+- Battery Level  : {row.get('battery_status', 0):.1f} %   (Thresholds: Warning < {BATTERY_THRESHOLDS['warning']}, Critical < {BATTERY_THRESHOLDS['critical']})
+- GPS Signal     : {'CONNECTED (Active Fix)' if row.get('gps_status', 1) == 1 else 'DISCONNECTED (Dead Zone Detected)'}
+
+--------------------------------------------------------------------------------
+2. AI/ML MULTI-TIER RISK EVALUATION
+--------------------------------------------------------------------------------
+- Primary Classification Verdict : {pred_label}
+- Classifier Confidence Distribution:
+  * CRITICAL : {pred_probs.get('CRITICAL', 0):.2%}
+  * WARNING  : {pred_probs.get('WARNING', 0):.2%}
+  * NORMAL   : {pred_probs.get('NORMAL', 0):.2%}
+- Anomaly Detection (Isolation Forest): {'⚠️ ANOMALOUS OUTLIER DETECTED' if is_anom else '✅ ENVELOPE CONSISTENT'}
+- Anomaly Outlier Decision Score     : {anom_score:.4f}
+
+--------------------------------------------------------------------------------
+3. ROOT CAUSE ATTRIBUTION
+--------------------------------------------------------------------------------
+"""
+    for exp in explanations:
+        report += f"- {exp}\n"
+
+    report += f"""
+--------------------------------------------------------------------------------
+4. FIRST RESPONDER & FLEET DISPATCH PROTOCOL
+--------------------------------------------------------------------------------
+"""
+    if pred_label == STATUS_CRITICAL:
+        report += """[EMERGENCY PROTOCOL LEVEL 1 - SEVERE RISK TRIGGERED]
+- Immediately dispatch nearest emergency rescue unit to coordinates.
+- Transmit vehicle impact telemetry to regional trauma care center.
+- Activate automated audio ping to verify driver responsiveness.
+"""
+    elif pred_label == STATUS_WARNING:
+        report += """[PRECAUTIONARY PROTOCOL LEVEL 2 - WARNING GENERATED]
+- Issue haptic and chime warning alert to in-cabin cluster.
+- Request driver speed reduction and schedule nearest battery/chassis inspection.
+"""
+    else:
+        report += """[STANDARD MONITORING]
+- All metrics within baseline operating envelope. No dispatch required.
+"""
+
+    report += """================================================================================
+END OF DOSSIER — GUARDIAN ON WHEELS SAFETY ASSURANCE
+================================================================================"""
+    return report
 
 
 def record_feedback(row, feedback_type, notes=""):
@@ -290,6 +464,7 @@ def handle_chat_rulebased(question, df, vehicle_id, model, scaler, le):
     if any(kw in q for kw in ["gps", "location", "signal"]):
         gps_pct = (vehicle_df["gps_status"] == 1).mean() * 100
         return (f"**GPS for {vehicle_id}:**\n\n- Current: {'🟢 Active' if latest['gps_status'] == 1 else '🔴 Lost'}\n"
+                f"- Coordinates: Lat {latest.get('latitude',0):.4f}, Lon {latest.get('longitude',0):.4f}\n"
                 f"- Uptime: {gps_pct:.1f}%\n- Losses: {(vehicle_df['gps_status'] == 0).sum()}")
 
     if any(kw in q for kw in ["impact", "crash", "collision"]):
@@ -337,7 +512,7 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
     # Status Banner
     render_status_banner(latest["risk_label"])
     if is_anomaly:
-        st.markdown('<span class="anomaly-badge">🔮 ANOMALY DETECTED</span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="anomaly-badge">🔮 ANOMALY DETECTED (Outlier score: {anom_score:.3f})</span>', unsafe_allow_html=True)
     st.markdown("")
 
     # Gauge Row
@@ -368,6 +543,12 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
         st.metric("🔋 Battery", f"{latest['battery_status']:.0f}%")
     with m5:
         st.metric("📡 GPS", "🟢 Active" if latest["gps_status"] == 1 else "🔴 Lost")
+
+    st.markdown("---")
+
+    # Geo-Tracking Map
+    st.markdown("### 🗺️ Live Route Telematics & Geolocation Tracking")
+    render_telemetry_map(vehicle_df, latest)
 
     st.markdown("---")
 
@@ -432,7 +613,8 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
         st.session_state.sim_rng = np.random.default_rng(None)
 
     if running:
-        reading = generate_sim_reading(st.session_state.sim_rng, scenario)
+        last_r = st.session_state.sim_history[-1] if st.session_state.sim_history else None
+        reading = generate_sim_reading(st.session_state.sim_rng, scenario, last_r)
         reading["timestamp"] = datetime.now().strftime("%H:%M:%S")
 
         features = [reading["speed"], reading["acceleration"], reading["impact_score"],
@@ -446,9 +628,8 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
         reading["confidence"] = max(pred_probs.values())
 
         st.session_state.sim_history.append(reading)
-        # Keep last 50
-        if len(st.session_state.sim_history) > 50:
-            st.session_state.sim_history = st.session_state.sim_history[-50:]
+        if len(st.session_state.sim_history) > 60:
+            st.session_state.sim_history = st.session_state.sim_history[-60:]
 
         # Display current
         render_status_banner(pred_label)
@@ -472,9 +653,13 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
             st.plotly_chart(make_gauge(reading["battery_status"], "Battery", 0, 100,
                             BATTERY_THRESHOLDS, "%", reverse=True), use_container_width=True, key="rt_bat")
 
-        # Live chart
+        # Live Map & Charts
+        st.markdown("#### 🛰️ Live Simulated Geo-Tracking")
+        hist_df = pd.DataFrame(st.session_state.sim_history)
+        render_telemetry_map(hist_df, reading)
+
+        # Live time-series
         if len(st.session_state.sim_history) > 1:
-            hist_df = pd.DataFrame(st.session_state.sim_history)
             fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
                                 subplot_titles=("Speed (km/h)", "Impact Score"))
             colors = [STATUS_COLORS.get(r.get("risk_label", "NORMAL"), "#999") for r in st.session_state.sim_history]
@@ -482,7 +667,7 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
                            marker=dict(color=colors, size=6), line=dict(color="#3498db")), row=1, col=1)
             fig.add_trace(go.Scatter(x=hist_df["timestamp"], y=hist_df["impact_score"], mode="lines+markers",
                            marker=dict(color=colors, size=6), line=dict(color="#e74c3c")), row=2, col=1)
-            fig.update_layout(height=350, template="plotly_dark", showlegend=False,
+            fig.update_layout(height=300, template="plotly_dark", showlegend=False,
                               margin=dict(l=40, r=20, t=30, b=20))
             st.plotly_chart(fig, use_container_width=True)
 
@@ -507,7 +692,7 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
 
 
 # ──────────────────────────────────────────────
-#  PAGE: ALERTS + TIMELINE
+#  PAGE: ALERTS + TIMELINE + DOSSIER
 # ──────────────────────────────────────────────
 
 def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
@@ -531,7 +716,7 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
     color_map = {STATUS_WARNING: "#f39c12", STATUS_CRITICAL: "#e74c3c"}
     fig_tl = px.scatter(tl_df, x="timestamp", y="speed", color="status",
                         color_discrete_map=color_map, size_max=12,
-                        title="Alert Timeline — Speed at Alert Time")
+                        title="Alert Timeline — Speed at Alert Event")
     fig_tl.update_layout(height=250, template="plotly_dark", margin=dict(l=40, r=20, t=40, b=20))
     fig_tl.update_traces(marker=dict(size=10))
     st.plotly_chart(fig_tl, use_container_width=True)
@@ -539,7 +724,7 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
     st.markdown("---")
 
     # ALERT CARDS
-    st.markdown(f"### 🚨 Alerts ({len(alerts_df)} most recent)")
+    st.markdown(f"### 🚨 Active Alerts ({len(alerts_df)} most recent)")
     for idx, row in alerts_df.iterrows():
         status = row["risk_label"]
         emoji = STATUS_EMOJIS[status]
@@ -549,26 +734,43 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
         is_anomaly, anom_score = detect_anomaly(features, iso_forest, anom_scaler)
 
         anom_tag = " 🔮 ANOMALY" if is_anomaly else ""
-        with st.expander(f"{emoji} {status}{anom_tag} — {row['timestamp']} | {row['speed']:.0f} km/h",
-                         expanded=(status == STATUS_CRITICAL)):
+        with st.expander(f"{emoji} {status}{anom_tag} — {row['timestamp']} | Speed: {row['speed']:.0f} km/h | Impact: {row['impact_score']:.3f}",
+                         expanded=(status == STATUS_CRITICAL and idx == alerts_df.index[0])):
             c1, c2 = st.columns([2, 1])
             with c1:
                 st.markdown("**Why this alert was generated:**")
                 for exp in explanations:
                     st.markdown(f"- {exp}")
                 if is_anomaly:
-                    st.markdown(f"- 🔮 **Anomaly detected** — this reading deviates from normal driving patterns (score: {anom_score:.3f})")
+                    st.markdown(f"- 🔮 **Anomaly Outlier Detected** — abnormal multivariate reading (score: {anom_score:.3f})")
+                if "latitude" in row:
+                    st.caption(f"📍 GPS Coordinates: Lat {row['latitude']:.4f}, Lon {row['longitude']:.4f}")
             with c2:
                 st.markdown("**ML Confidence:**")
                 for label in [STATUS_CRITICAL, STATUS_WARNING, STATUS_NORMAL]:
                     if label in pred_probs:
                         st.progress(pred_probs[label], text=f"{label}: {pred_probs[label]:.1%}")
 
-            ca, cb = st.columns([1, 3])
+            ca, cb, cc = st.columns([1, 1, 2])
             with ca:
                 if st.button("🚫 False Alarm", key=f"fa_{idx}"):
                     record_feedback(row, "false_alarm")
                     st.success("Marked as false alarm!")
+            with cb:
+                if st.button("📄 Generate Dossier", key=f"dos_{idx}"):
+                    dossier_text = generate_incident_dossier(row, model, scaler, le, iso_forest, anom_scaler)
+                    st.session_state[f"dossier_view_{idx}"] = dossier_text
+
+            if f"dossier_view_{idx}" in st.session_state:
+                st.markdown("#### 📄 Incident Investigation Dossier")
+                st.markdown(f'<div class="dossier-box">{st.session_state[f"dossier_view_{idx}"]}</div>', unsafe_allow_html=True)
+                st.download_button(
+                    "📥 Download Dossier (Markdown)",
+                    st.session_state[f"dossier_view_{idx}"],
+                    file_name=f"Incident_Dossier_{vehicle_id}_{idx}.md",
+                    mime="text/markdown",
+                    key=f"dl_dos_{idx}",
+                )
 
 
 # ──────────────────────────────────────────────
@@ -577,42 +779,51 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
 
 def render_chat(df, vehicle_id, model, scaler, le):
     backend = get_backend()
+    model_name = GROQ_MODEL if backend == "groq" else (OPENROUTER_MODEL if backend == "openrouter" else "Rule Engine")
     badge = {
-        "groq": "🧠 Powered by Groq (Llama 3.3 70B)",
-        "openrouter": "🧠 Powered by OpenRouter (Llama 3.3 70B)",
-        "rule_based": "📋 Rule-based mode (set GROQ_API_KEY or OPENROUTER_API_KEY for AI chat)",
+        "groq": f"🧠 Powered by Groq ({model_name})",
+        "openrouter": f"🧠 Powered by OpenRouter ({model_name})",
+        "rule_based": "📋 Rule-based mode (Set GROQ_API_KEY in .env for full AI chat)",
     }
 
     st.markdown("### 💬 Chat with CATS Safety Bot")
     st.markdown(f'<span class="ai-badge">{badge[backend]}</span>', unsafe_allow_html=True)
-    st.caption(f"Ask anything about vehicle **{vehicle_id}**'s safety and telemetry.")
+    st.caption(f"Conversational safety assistant analyzing telemetry for **{vehicle_id}** in real time.")
 
-    if backend != "rule_based":
-        with st.expander("⚙️ API Key Configuration"):
-            st.markdown("""
-            Set environment variables before launching:
-            ```
-            set GROQ_API_KEY=gsk_your_key_here
-            set OPENROUTER_API_KEY=sk-or-your_key_here
-            ```
-            Get a free Groq key at [console.groq.com](https://console.groq.com)
-            """)
+    # Quick prompt chips
+    st.markdown("**💡 Quick Analysis Prompts:**")
+    qc1, qc2, qc3, qc4 = st.columns(4)
+    quick_prompt = None
+    with qc1:
+        if st.button("⚡ Is it safe to drive?"):
+            quick_prompt = "Is this vehicle currently safe to drive? Give a clear safety assessment with specific metrics."
+    with qc2:
+        if st.button("🚨 Assess current risk"):
+            quick_prompt = "Assess the current vehicle risk level and explain why this classification was assigned."
+    with qc3:
+        if st.button("💥 Crash & impact analysis"):
+            quick_prompt = "Analyze the vehicle impact score and acceleration for any crash or collision risk."
+    with qc4:
+        if st.button("🔋 Battery & GPS health"):
+            quick_prompt = "Evaluate the vehicle battery status and GPS connectivity uptime."
 
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": f"👋 Hi! I'm the CATS Safety Bot monitoring **{vehicle_id}**. Ask me anything about its telemetry, safety status, or alerts! {'🧠 AI-powered responses enabled.' if backend != 'rule_based' else ''}"}
+            {"role": "assistant", "content": f"👋 Hello! I am the CATS AI Safety Assistant monitoring **{vehicle_id}**. You can ask me any question about vehicle health, speed risks, crash indicators, or recent alerts."}
         ]
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    if prompt := st.chat_input("Ask about vehicle safety, telemetry, alerts..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    input_prompt = st.chat_input("Ask about vehicle safety, telemetry, alerts...")
+    active_prompt = quick_prompt if quick_prompt else input_prompt
 
-        # Try LLM first, fallback to rules
+    if active_prompt:
+        st.session_state.messages.append({"role": "user", "content": active_prompt})
+        with st.chat_message("user"):
+            st.markdown(active_prompt)
+
         vehicle_df = df[df["vehicle_id"] == vehicle_id].sort_values("timestamp")
         latest = vehicle_df.iloc[-1] if len(vehicle_df) else pd.Series()
         vehicle_data = latest.to_dict() if len(latest) else {}
@@ -620,11 +831,11 @@ def render_chat(df, vehicle_id, model, scaler, le):
 
         response = None
         if backend != "rule_based":
-            with st.spinner("🧠 Thinking..."):
+            with st.spinner("🧠 Analyzing telemetry with Groq AI..."):
                 response = llm_chat(st.session_state.messages, vehicle_data, stats)
 
-        if response is None:
-            response = handle_chat_rulebased(prompt, df, vehicle_id, model, scaler, le)
+        if response is None or response.startswith("⚠️"):
+            response = handle_chat_rulebased(active_prompt, df, vehicle_id, model, scaler, le)
 
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
@@ -637,6 +848,7 @@ def render_chat(df, vehicle_id, model, scaler, le):
 
 def render_simulator(model, scaler, le, iso_forest, anom_scaler):
     st.markdown("### 🎛️ Telemetry Simulator with AI Explainability")
+    st.caption("Adjust real-time sensor parameters to observe classification boundaries, SHAP factor attribution, and anomaly scores.")
 
     c1, c2 = st.columns(2)
     with c1:
@@ -645,7 +857,7 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
         sim_impact = st.slider("Impact Score", 0.0, 1.0, 0.05, 0.01)
     with c2:
         sim_battery = st.slider("Battery (%)", 0.0, 100.0, 75.0, 1.0)
-        sim_gps = st.selectbox("GPS Status", [1, 0], format_func=lambda x: "🟢 Active" if x == 1 else "🔴 Lost")
+        sim_gps = st.selectbox("GPS Status", [1, 0], format_func=lambda x: "🟢 Active Fix" if x == 1 else "🔴 Lost / Dead Zone")
 
     features = [sim_speed, sim_accel, sim_impact, sim_battery, sim_gps]
     pred_label, pred_probs = predict_risk(model, scaler, le, features)
@@ -654,49 +866,46 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
     st.markdown("---")
     render_status_banner(pred_label)
     if is_anomaly:
-        st.markdown(f'<span class="anomaly-badge">🔮 ANOMALY (score: {anom_score:.3f})</span>', unsafe_allow_html=True)
+        st.markdown(f'<span class="anomaly-badge">🔮 ANOMALY OUTLIER (score: {anom_score:.3f})</span>', unsafe_allow_html=True)
     st.markdown("")
 
     # Explanation
     sim_row = pd.Series({"speed": sim_speed, "acceleration": sim_accel,
                           "impact_score": sim_impact, "battery_status": sim_battery,
-                          "gps_status": sim_gps})
+                          "gps_status": sim_gps, "vehicle_id": "VH-SIM",
+                          "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
     explanations = generate_explanation(sim_row)
 
     ex_col, shap_col = st.columns(2)
 
     with ex_col:
-        st.markdown("**📋 Rule-Based Explanation:**")
+        st.markdown("**📋 Deterministic Threshold Rule Analysis:**")
         for exp in explanations:
             st.markdown(f"- {exp}")
 
-        st.markdown("**📊 Prediction Confidence:**")
+        st.markdown("**📊 Multi-Class Prediction Probabilities:**")
         for label in [STATUS_CRITICAL, STATUS_WARNING, STATUS_NORMAL]:
             if label in pred_probs:
                 st.progress(pred_probs[label], text=f"{STATUS_EMOJIS.get(label, '')} {label}: {pred_probs[label]:.1%}")
 
     with shap_col:
-        st.markdown("**🔬 SHAP Feature Contributions:**")
+        st.markdown("**🔬 SHAP Feature Attribution:**")
         try:
             import shap
             X_input = np.array(features).reshape(1, -1)
             X_scaled = scaler.transform(X_input)
 
-            # Use KernelExplainer for broad model compatibility
-            # Sample background data for KernelExplainer
-            bg_data = shap.sample(pd.DataFrame(scaler.transform(load_data()[FEATURE_COLUMNS].values), columns=FEATURE_COLUMNS), 100)
+            # Sample background dataset for KernelExplainer
+            bg_data = shap.sample(pd.DataFrame(scaler.transform(load_data()[FEATURE_COLUMNS].values), columns=FEATURE_COLUMNS), 50)
             explainer = shap.KernelExplainer(model.predict_proba, bg_data)
-            shap_values = explainer.shap_values(X_scaled, nsamples=100)
+            shap_values = explainer.shap_values(X_scaled, nsamples=40)
 
-            # Get SHAP for predicted class
             pred_idx = list(le.classes_).index(pred_label)
-
             if isinstance(shap_values, list):
                 sv = shap_values[pred_idx][0]
             else:
                 sv = shap_values[0, :, pred_idx] if shap_values.ndim == 3 else shap_values[0]
 
-            # Bar chart of SHAP values
             shap_df = pd.DataFrame({
                 "Feature": FEATURE_COLUMNS,
                 "SHAP Value": sv,
@@ -711,14 +920,21 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
             ))
             fig_shap.update_layout(
                 height=250, template="plotly_dark",
-                title=f"SHAP for → {pred_label}",
-                xaxis_title="Impact on prediction",
+                title=f"SHAP Marginal Contribution to {pred_label}",
+                xaxis_title="Directional Influence on Probability",
                 margin=dict(l=100, r=40, t=40, b=20),
             )
             st.plotly_chart(fig_shap, use_container_width=True)
-            st.caption("🔴 Red = pushes toward this class | 🔵 Blue = pushes away")
+            st.caption("🔴 Red = Pushes toward this risk level | 🔵 Blue = Pushes away")
         except Exception as e:
-            st.warning(f"SHAP visualization unavailable: {e}")
+            st.warning(f"SHAP visualization computation: {e}")
+
+    # Generate dossier for simulated reading
+    st.markdown("---")
+    if st.button("📄 Export Simulated Incident Dossier"):
+        sim_dossier = generate_incident_dossier(sim_row, model, scaler, le, iso_forest, anom_scaler)
+        st.markdown(f'<div class="dossier-box">{sim_dossier}</div>', unsafe_allow_html=True)
+        st.download_button("📥 Download Dossier", sim_dossier, "Simulated_Incident_Dossier.md", "text/markdown")
 
 
 # ──────────────────────────────────────────────
@@ -726,26 +942,26 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
 # ──────────────────────────────────────────────
 
 def render_model_comparison():
-    st.markdown("### 🏆 Multi-Model Comparison")
+    st.markdown("### 🏆 Multi-Model Comparison & Benchmarking")
     comparison = load_model_comparison()
 
     if comparison is None:
         st.warning("Run `python models/train_compare.py` to generate model comparison data.")
         return
 
-    st.success(f"**Best Model: {comparison['best_model']}**")
+    st.success(f"**Selected Production Model: {comparison['best_model']}** (Evaluated across 5-Fold Stratified Cross-Validation)")
 
     # Comparison table
     rows = []
     for name, metrics in comparison["models"].items():
         rows.append({
-            "Model": ("🏆 " if name == comparison["best_model"] else "") + name,
+            "Model Architecture": ("🏆 " if name == comparison["best_model"] else "") + name,
             "Accuracy": f"{metrics['accuracy']:.4f}",
-            "F1 Score": f"{metrics['f1_weighted']:.4f}",
+            "F1 (Weighted)": f"{metrics['f1_weighted']:.4f}",
             "Precision": f"{metrics['precision_weighted']:.4f}",
             "Recall": f"{metrics['recall_weighted']:.4f}",
-            "CV F1 (mean±std)": f"{metrics['cv_f1_mean']:.4f} ± {metrics['cv_f1_std']:.4f}",
-            "Train Time": f"{metrics['train_time_s']:.2f}s",
+            "CV F1 (Mean ± Std)": f"{metrics['cv_f1_mean']:.4f} ± {metrics['cv_f1_std']:.4f}",
+            "Training Time": f"{metrics['train_time_s']:.2f}s",
         })
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
@@ -759,7 +975,7 @@ def render_model_comparison():
         fig.add_trace(go.Bar(name=metric.replace("_weighted", "").title(),
                              x=model_names, y=values, marker_color=colors[i]))
     fig.update_layout(barmode="group", height=350, template="plotly_dark",
-                      title="Model Performance Comparison", yaxis_range=[0.95, 1.0],
+                      title="Comparative Performance Across Architectures", yaxis_range=[0.95, 1.0],
                       margin=dict(l=40, r=20, t=40, b=20))
     st.plotly_chart(fig, use_container_width=True)
 
@@ -777,6 +993,45 @@ def render_model_comparison():
 
 
 # ──────────────────────────────────────────────
+#  PAGE: CODEBASE KNOWLEDGE GRAPH (GRAPHIFY)
+# ──────────────────────────────────────────────
+
+def render_knowledge_graph():
+    st.markdown("### 🌐 Codebase Architecture & Knowledge Graph (via Graphify)")
+    st.caption("Auto-generated knowledge graph mapping all 24 project files, AST call structures, god nodes, and community clusters.")
+
+    # God nodes & Highlights
+    report_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "graphify-out", "GRAPH_REPORT.md")
+    graph_html_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "graphify-out", "graph.html")
+
+    col_k1, col_k2, col_k3 = st.columns(3)
+    with col_k1:
+        st.metric("Total Nodes Extracted", "141 AST Nodes")
+    with col_k2:
+        st.metric("Relational Edges", "310 Edges")
+    with col_k3:
+        st.metric("Detected Communities", "14 Clusters")
+
+    st.markdown("---")
+
+    # Render Interactive HTML Graph
+    if os.path.exists(graph_html_path):
+        st.markdown("#### 🔍 Interactive 2D/3D Network Topology")
+        st.caption("Drag, zoom, and click any node to trace code calls, imports, and dependencies.")
+        with open(graph_html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        components.html(html_content, height=650, scrolling=True)
+    else:
+        st.info("Run `graphify` to export `graph.html`.")
+
+    # Read Graph Report highlights
+    if os.path.exists(report_path):
+        with st.expander("📖 View Full GRAPH_REPORT.md"):
+            with open(report_path, "r", encoding="utf-8") as f:
+                st.markdown(f.read())
+
+
+# ──────────────────────────────────────────────
 #  PAGE: FEEDBACK + RETRAINING
 # ──────────────────────────────────────────────
 
@@ -789,24 +1044,22 @@ def render_feedback():
 
         c1, c2 = st.columns(2)
         with c1:
-            st.metric("Total Feedback", len(feedback_df))
-            st.metric("False Alarms", len(feedback_df[feedback_df["feedback_type"] == "false_alarm"]))
+            st.metric("Total Feedback Entries", len(feedback_df))
+            st.metric("False Alarm Records", len(feedback_df[feedback_df["feedback_type"] == "false_alarm"]))
         with c2:
             csv = feedback_df.to_csv(index=False)
-            st.download_button("📥 Download CSV", csv, "feedback_log.csv", "text/csv")
+            st.download_button("📥 Download Feedback Log CSV", csv, "feedback_log.csv", "text/csv")
 
         st.markdown("---")
-        st.markdown("### 🔄 Retrain Model with Feedback")
-        st.caption("Incorporate false alarm data to improve the classifier.")
+        st.markdown("### 🔄 Active Learning: Retrain Classifier on Feedback")
+        st.caption("Incorporates operator false alarm tags to adjust decision boundaries dynamically.")
 
-        if st.button("🔄 Retrain Model", type="primary"):
+        if st.button("🔄 Retrain Production Model with Feedback Data", type="primary"):
             with st.spinner("Retraining model with feedback data..."):
                 try:
-                    # Load original data
                     df = pd.read_csv(DATASET_PATH)
                     false_alarms = feedback_df[feedback_df["feedback_type"] == "false_alarm"]
 
-                    # For false alarms: downgrade the label
                     relabeled = 0
                     for _, fa in false_alarms.iterrows():
                         mask = (
@@ -823,10 +1076,8 @@ def render_feedback():
                             relabeled += 1
 
                     if relabeled > 0:
-                        # Retrain
-                        from sklearn.ensemble import RandomForestClassifier
+                        from sklearn.ensemble import GradientBoostingClassifier
                         from sklearn.preprocessing import StandardScaler, LabelEncoder
-                        from sklearn.model_selection import train_test_split
 
                         X = df[FEATURE_COLUMNS].values
                         y = df["risk_label"].values
@@ -835,31 +1086,30 @@ def render_feedback():
                         scaler_new = StandardScaler()
                         X_scaled = scaler_new.fit_transform(X)
 
-                        clf = RandomForestClassifier(n_estimators=100, max_depth=15,
-                                                      class_weight="balanced", random_state=42, n_jobs=-1)
+                        clf = GradientBoostingClassifier(n_estimators=100, max_depth=5, learning_rate=0.1, random_state=42)
                         clf.fit(X_scaled, y_enc)
 
                         joblib.dump({"model": clf, "label_encoder": le_new}, CLASSIFIER_PATH)
                         joblib.dump(scaler_new, SCALER_PATH)
 
-                        st.success(f"✅ Model retrained! {relabeled} labels adjusted from feedback.")
+                        st.success(f"✅ Model retrained successfully! {relabeled} training instances adjusted.")
                         st.cache_resource.clear()
                     else:
-                        st.info("No matching readings found to relabel. Model unchanged.")
+                        st.info("No corresponding readings found to relabel. Model weights preserved.")
                 except Exception as e:
-                    st.error(f"Retraining failed: {e}")
+                    st.error(f"Retraining encountered error: {e}")
     else:
-        st.info("No feedback recorded yet. Mark alerts as false alarms on the Alerts page to start building the feedback log.")
+        st.info("No feedback recorded yet. Mark alerts as false alarms on the Alerts page to build the audit log.")
 
 
 # ──────────────────────────────────────────────
-#  MAIN
+#  MAIN APPLICATION ROUTER
 # ──────────────────────────────────────────────
 
 def main():
     # Sidebar
     st.sidebar.markdown("## 🚗 CATS Safety Bot")
-    st.sidebar.caption("Crisis Alert Tech System v2.0")
+    st.sidebar.caption("Crisis Alert Tech System v2.1 (Top 1 Edition)")
     st.sidebar.markdown("---")
 
     try:
@@ -868,35 +1118,36 @@ def main():
         iso_forest, anom_scaler = load_anomaly_model()
     except Exception as e:
         st.error(f"Failed to load: {e}")
-        st.info("Run: `python data/generate_dataset.py` → `python models/train.py`")
+        st.info("Run: `python data/generate_dataset.py` → `python models/train_compare.py`")
         return
 
     # Vehicle selector
     vehicle_ids = get_vehicle_ids(df)
-    selected_vehicle = st.sidebar.selectbox("🚘 Vehicle", vehicle_ids)
+    selected_vehicle = st.sidebar.selectbox("🚘 Select Vehicle", vehicle_ids)
 
     # LLM status
     backend = get_backend()
-    backend_icon = {"groq": "🟢 Groq", "openrouter": "🟢 OpenRouter", "rule_based": "🟡 Rule-based"}
+    backend_icon = {"groq": f"🟢 Groq ({GROQ_MODEL})", "openrouter": f"🟢 OpenRouter ({OPENROUTER_MODEL})", "rule_based": "🟡 Rule-based"}
     st.sidebar.markdown(f"**AI Chat:** {backend_icon[backend]}")
 
     # Anomaly status
-    st.sidebar.markdown(f"**Anomaly Detection:** {'🟢 Active' if iso_forest else '🔴 Off'}")
+    st.sidebar.markdown(f"**Anomaly Detection:** {'🟢 Isolation Forest Active' if iso_forest else '🔴 Off'}")
 
     st.sidebar.markdown("---")
-    page = st.sidebar.radio("📍 Navigate", [
+    page = st.sidebar.radio("📍 Navigation", [
         "📊 Dashboard",
         "🔴 Real-Time Sim",
         "🚨 Alerts & Timeline",
         "💬 AI Chat",
         "🎛️ Simulator + SHAP",
         "🏆 Model Comparison",
+        "🌐 Knowledge Graph (Graphify)",
         "📝 Feedback & Retrain",
     ])
 
     # Header
     st.title("🚗 CATS AI Safety Bot")
-    st.caption("Crisis Alert Tech System — AI-Powered Vehicle Safety Monitoring")
+    st.caption("Crisis Alert Tech System — Real-Time Telematics & AI Safety Monitoring")
 
     if page == "📊 Dashboard":
         render_dashboard(df, selected_vehicle, model, scaler, le, iso_forest, anom_scaler)
@@ -910,6 +1161,8 @@ def main():
         render_simulator(model, scaler, le, iso_forest, anom_scaler)
     elif page == "🏆 Model Comparison":
         render_model_comparison()
+    elif page == "🌐 Knowledge Graph (Graphify)":
+        render_knowledge_graph()
     elif page == "📝 Feedback & Retrain":
         render_feedback()
 

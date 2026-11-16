@@ -175,8 +175,27 @@ def generate_dataset(n_total=8000, seed=42):
     timestamps = [base_time + timedelta(minutes=int(rng.integers(0, 43200))) for _ in range(n)]
     timestamps.sort()
 
-    # Generate vehicle IDs (5 vehicles)
+    # Generate vehicle IDs and realistic GPS coordinates (corridors around Bangalore/Outer Ring Road)
     vehicle_ids = [f"VH-{rng.integers(1001, 1006):04d}" for _ in range(n)]
+
+    # Base coordinates for vehicles
+    corridor_centers = {
+        "VH-1001": (12.9716, 77.5946),  # Central
+        "VH-1002": (12.9279, 77.6271),  # Koramangala
+        "VH-1003": (12.9850, 77.7300),  # Whitefield
+        "VH-1004": (13.0358, 77.5970),  # Hebbal / Airport Expressway
+        "VH-1005": (12.8452, 77.6602),  # Electronic City
+    }
+
+    latitudes = []
+    longitudes = []
+    for vid in vehicle_ids:
+        base_lat, base_lon = corridor_centers[vid]
+        # Realistic offset within ~8-12 km radius
+        lat_offset = float(rng.normal(0, 0.035))
+        lon_offset = float(rng.normal(0, 0.035))
+        latitudes.append(np.round(base_lat + lat_offset, 5))
+        longitudes.append(np.round(base_lon + lon_offset, 5))
 
     # Build DataFrame
     df = pd.DataFrame({
@@ -187,6 +206,8 @@ def generate_dataset(n_total=8000, seed=42):
         "impact_score": np.round(all_data["impact_score"], 3),
         "battery_status": np.round(all_data["battery_status"], 1),
         "gps_status": all_data["gps_status"].astype(int),
+        "latitude": latitudes,
+        "longitude": longitudes,
     })
 
     # Classify each reading
