@@ -16,10 +16,10 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
-# Groq model (free tier)
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# Groq model (free tier — check console.groq.com/docs/models for current availability)
+GROQ_MODEL = "qwen/qwen3.8-27b"
 # OpenRouter model (fallback)
-OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+OPENROUTER_MODEL = "qwen/qwen3-8b:free"
 
 SYSTEM_PROMPT = """You are CATS (Crisis Alert Tech System) Safety Bot — an AI assistant that monitors vehicle telemetry and safety.
 

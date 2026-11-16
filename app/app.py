@@ -682,8 +682,11 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
             X_input = np.array(features).reshape(1, -1)
             X_scaled = scaler.transform(X_input)
 
-            explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(X_scaled)
+            # Use KernelExplainer for broad model compatibility
+            # Sample background data for KernelExplainer
+            bg_data = shap.sample(pd.DataFrame(scaler.transform(load_data()[FEATURE_COLUMNS].values), columns=FEATURE_COLUMNS), 100)
+            explainer = shap.KernelExplainer(model.predict_proba, bg_data)
+            shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
             # Get SHAP for predicted class
             pred_idx = list(le.classes_).index(pred_label)
