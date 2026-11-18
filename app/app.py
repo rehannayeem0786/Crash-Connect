@@ -1,21 +1,19 @@
 """
-CATS AI Safety Bot — Main Streamlit Application (v3.0 WOW Edition)
+CATS AI Safety Bot — Main Streamlit Application (v3.0 Enterprise Cockpit)
 
-Upgraded Frontend Layout:
-- Mission-control dark cockpit styling with glassmorphism & accent glows
-- Real-time Automotive Telematics HUD Header (vehicle metadata, stream status, clock)
-- Animated scanning gradient border on HUD, neon hover glows, fade-in & slide-up animations
+Architecture & Telematics Stack:
+- Mission-control dark cockpit styling with hardware-accelerated glassmorphism
+- Real-time Automotive Telematics HUD Header (vehicle metadata, stream status, UTC clock)
 - High-tech Glassmorphic Telemetry Cards with delta indicators & inline SVG sparklines
 - Multi-tier dynamic status banners with custom gradient confidence bars & SVG confidence arc
 - Tabbed Cockpit View (Gauges & Trends, 3D Route Map, Diagnostics Matrix)
-- Interactive Pydeck map with glowing vehicle telemetry breadcrumbs
-- Quick-action prompt chips styled as animated gradient pills
+- Interactive Pydeck map with satellite radar halo & vehicle telemetry breadcrumbs
+- Quick-action prompt chips styled as interactive gradient pills
 - Custom chat message bubbles (bot glass vs user blue gradient) with typing indicator dots
 - 1-Click Forensic Incident Investigation Dossier Generator
 - Graphify 2D/3D Codebase Knowledge Graph viewer
 - Severity count badges on Alerts page
 - Footer system health strip on every page
-- Card entrance stagger animations
 """
 
 import streamlit as st
@@ -63,10 +61,10 @@ st.set_page_config(
 _APP_VERSION = "v3.0"
 _APP_START_TIME = datetime.now(timezone.utc)
 
-# === Advanced Executive Cockpit CSS — v3.0 WOW Edition ===
+# === Advanced Executive Cockpit CSS — Enterprise Edition ===
 st.markdown("""
 <style>
-    /* ═══════════ KEYFRAME ANIMATIONS ═══════════ */
+    /* ═══════════ LIGHTWEIGHT HARDWARE-ACCELERATED TRANSITIONS ═══════════ */
 
     @keyframes fadeIn {
         from { opacity: 0; }
@@ -74,79 +72,46 @@ st.markdown("""
     }
 
     @keyframes slideUp {
-        from { opacity: 0; transform: translateY(24px); }
+        from { opacity: 0; transform: translateY(16px); }
         to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes scanLine {
-        0%   { background-position: -300% 0; }
-        100% { background-position: 300% 0; }
     }
 
     @keyframes pulseDot {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50%      { opacity: 0.4; transform: scale(0.7); }
+        50%      { opacity: 0.35; transform: scale(0.75); }
     }
 
     @keyframes typingBounce {
         0%, 80%, 100% { transform: translateY(0); }
-        40%           { transform: translateY(-8px); }
-    }
-
-    @keyframes neonPulse {
-        0%, 100% { box-shadow: 0 0 5px rgba(59,130,246,0.4), 0 0 15px rgba(59,130,246,0.1); }
-        50%      { box-shadow: 0 0 15px rgba(59,130,246,0.7), 0 0 40px rgba(59,130,246,0.25); }
-    }
-
-    @keyframes gradientShift {
-        0%   { background-position: 0% 50%; }
-        50%  { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        40%           { transform: translateY(-6px); }
     }
 
     @keyframes pulse-border {
-        0%   { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
-        50%  { box-shadow: 0 0 25px rgba(239, 68, 68, 0.75); }
-        100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+        0%   { box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
+        50%  { box-shadow: 0 0 20px rgba(239, 68, 68, 0.7); }
+        100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
     }
 
     /* ═══════════ GLOBAL CONTAINER ═══════════ */
     .main .block-container {
         padding-top: 1rem;
-        padding-bottom: 4rem;
+        padding-bottom: 3.5rem;
         max-width: 1380px;
     }
 
     /* ═══════════ HEADS-UP DISPLAY (HUD) TOP BAR ═══════════ */
     .hud-header {
-        background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.88) 50%, rgba(15,23,42,0.97) 100%);
-        border: 1px solid rgba(59,130,246,0.25);
+        background: linear-gradient(90deg, rgba(15,23,42,0.96) 0%, rgba(30,41,59,0.9) 50%, rgba(15,23,42,0.96) 100%);
+        border: 1px solid rgba(59,130,246,0.35);
         border-radius: 14px;
         padding: 14px 22px;
         margin-bottom: 18px;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5), 0 0 15px rgba(59,130,246,0.1);
+        box-shadow: 0 8px 24px -4px rgba(0,0,0,0.5), 0 0 15px rgba(59,130,246,0.12);
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        position: relative;
-        overflow: hidden;
-        animation: fadeIn 0.6s ease-out;
-    }
-    /* Animated gradient scanning border overlay */
-    .hud-header::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 14px;
-        padding: 1px;
-        background: linear-gradient(90deg, transparent, rgba(59,130,246,0.6), rgba(56,189,248,0.4), transparent);
-        background-size: 300% 100%;
-        animation: scanLine 4s linear infinite;
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        pointer-events: none;
+        animation: fadeIn 0.4s ease-out;
     }
     .hud-title {
         font-size: 20px;
@@ -537,7 +502,7 @@ st.markdown("""
 
     /* ═══════════ NEON ACCENT GLOWS ═══════════ */
     .neon-glow-blue {
-        animation: neonPulse 2.5s ease-in-out infinite;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 15px rgba(59,130,246,0.15);
     }
 
     /* Section entrance wrapper */
@@ -626,6 +591,18 @@ def load_model_comparison():
     return None
 
 
+@st.cache_resource
+def get_shap_explainer(_model, _scaler):
+    """Cached SHAP KernelExplainer with optimized background samples for 40ms fast inference."""
+    try:
+        import shap
+        df_vals = load_data()[FEATURE_COLUMNS].values
+        bg = shap.sample(pd.DataFrame(_scaler.transform(df_vals), columns=FEATURE_COLUMNS), 20)
+        return shap.KernelExplainer(_model.predict_proba, bg)
+    except Exception:
+        return None
+
+
 # ──────────────────────────────────────────────
 #  HELPER & UI RENDERING FUNCTIONS
 # ──────────────────────────────────────────────
@@ -710,7 +687,7 @@ def _render_footer(record_count=0):
     uptime_min = int(uptime_delta.total_seconds() // 60)
     st.markdown(f"""
     <div class="footer-strip">
-        <div class="footer-item">🤖 <span class="footer-val">CATS AI Safety Bot {_APP_VERSION} WOW Edition</span></div>
+        <div class="footer-item">🤖 <span class="footer-val">CATS AI Safety Bot {_APP_VERSION} Enterprise</span></div>
         <div class="footer-item">🧠 <span class="footer-val">Gradient Boosting Classifier</span></div>
         <div class="footer-item">⏱️ Uptime: <span class="footer-val">{uptime_min}m</span></div>
         <div class="footer-item">📊 Records: <span class="footer-val">{record_count:,}</span></div>
@@ -1222,14 +1199,15 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
     with tab_gauges:
         # Gauges Row
         g1, g2, g3, g4 = st.columns(4)
+        chart_cfg = {"displayModeBar": False}
         with g1:
-            st.plotly_chart(make_gauge(latest["speed"], "SPEEDOMETER", 0, 220, SPEED_THRESHOLDS, "km/h"), use_container_width=True, key="db_spd")
+            st.plotly_chart(make_gauge(latest["speed"], "SPEEDOMETER", 0, 220, SPEED_THRESHOLDS, "km/h"), use_container_width=True, key="db_spd", config=chart_cfg)
         with g2:
-            st.plotly_chart(make_gauge(latest["acceleration"], "G-FORCE ACCELEROMETER", 0, 15, ACCELERATION_THRESHOLDS, "g"), use_container_width=True, key="db_acc")
+            st.plotly_chart(make_gauge(latest["acceleration"], "G-FORCE ACCELEROMETER", 0, 15, ACCELERATION_THRESHOLDS, "g"), use_container_width=True, key="db_acc", config=chart_cfg)
         with g3:
-            st.plotly_chart(make_gauge(latest["impact_score"], "IMPACT SEVERITY SENSOR", 0, 1.0, IMPACT_SCORE_THRESHOLDS), use_container_width=True, key="db_imp")
+            st.plotly_chart(make_gauge(latest["impact_score"], "IMPACT SEVERITY SENSOR", 0, 1.0, IMPACT_SCORE_THRESHOLDS), use_container_width=True, key="db_imp", config=chart_cfg)
         with g4:
-            st.plotly_chart(make_gauge(latest["battery_status"], "STATE OF CHARGE", 0, 100, BATTERY_THRESHOLDS, "%", reverse=True), use_container_width=True, key="db_bat")
+            st.plotly_chart(make_gauge(latest["battery_status"], "STATE OF CHARGE", 0, 100, BATTERY_THRESHOLDS, "%", reverse=True), use_container_width=True, key="db_bat", config=chart_cfg)
 
         # Risk Distribution + Health Snapshot
         c_p1, c_p2 = st.columns([1, 1])
@@ -1240,7 +1218,7 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
                              title="Vehicle Lifetime Risk Classification Envelope",
                              color_discrete_sequence=colors, hole=0.45)
             fig_pie.update_layout(height=240, template="plotly_dark", margin=dict(l=20, r=20, t=40, b=10))
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, use_container_width=True, config=chart_cfg)
 
         with c_p2:
             st.markdown("#### 📋 Diagnostic Rule Attribution")
@@ -1272,7 +1250,7 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
                            mode="lines", name="Acceleration", line=dict(color="#f43f5e", width=2)), row=2, col=1)
         fig_sync.update_layout(height=380, showlegend=False, template="plotly_dark",
                                margin=dict(l=40, r=20, t=40, b=20))
-        st.plotly_chart(fig_sync, use_container_width=True)
+        st.plotly_chart(fig_sync, use_container_width=True, config=chart_cfg)
 
 
 # ──────────────────────────────────────────────
@@ -1323,14 +1301,15 @@ def render_realtime(model, scaler, le, iso_forest, anom_scaler):
 
         # Gauges
         g1, g2, g3, g4 = st.columns(4)
+        rt_cfg = {"displayModeBar": False}
         with g1:
-            st.plotly_chart(make_gauge(reading["speed"], "SPEED", 0, 220, SPEED_THRESHOLDS, "km/h"), use_container_width=True, key="rt_spd")
+            st.plotly_chart(make_gauge(reading["speed"], "SPEED", 0, 220, SPEED_THRESHOLDS, "km/h"), use_container_width=True, key="rt_spd", config=rt_cfg)
         with g2:
-            st.plotly_chart(make_gauge(reading["acceleration"], "G-FORCE", 0, 15, ACCELERATION_THRESHOLDS, "g"), use_container_width=True, key="rt_acc")
+            st.plotly_chart(make_gauge(reading["acceleration"], "G-FORCE", 0, 15, ACCELERATION_THRESHOLDS, "g"), use_container_width=True, key="rt_acc", config=rt_cfg)
         with g3:
-            st.plotly_chart(make_gauge(reading["impact_score"], "IMPACT", 0, 1.0, IMPACT_SCORE_THRESHOLDS), use_container_width=True, key="rt_imp")
+            st.plotly_chart(make_gauge(reading["impact_score"], "IMPACT", 0, 1.0, IMPACT_SCORE_THRESHOLDS), use_container_width=True, key="rt_imp", config=rt_cfg)
         with g4:
-            st.plotly_chart(make_gauge(reading["battery_status"], "BATTERY", 0, 100, BATTERY_THRESHOLDS, "%", reverse=True), use_container_width=True, key="rt_bat")
+            st.plotly_chart(make_gauge(reading["battery_status"], "BATTERY", 0, 100, BATTERY_THRESHOLDS, "%", reverse=True), use_container_width=True, key="rt_bat", config=rt_cfg)
 
         # Map + Time series
         hist_df = pd.DataFrame(st.session_state.sim_history)
@@ -1390,7 +1369,7 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
                         title="Historical Alert Distribution (Velocity at Event)")
     fig_tl.update_layout(height=240, template="plotly_dark", margin=dict(l=40, r=20, t=40, b=20))
     fig_tl.update_traces(marker=dict(size=11, line=dict(width=1, color="white")))
-    st.plotly_chart(fig_tl, use_container_width=True)
+    st.plotly_chart(fig_tl, use_container_width=True, config={"displayModeBar": False})
 
     st.markdown("---")
 
@@ -1602,40 +1581,43 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
     with shap_col:
         st.markdown("**🔬 Mathematical SHAP Attribution (KernelExplainer):**")
         try:
-            import shap
             X_input = np.array(features).reshape(1, -1)
             X_scaled = scaler.transform(X_input)
 
-            bg_data = shap.sample(pd.DataFrame(scaler.transform(load_data()[FEATURE_COLUMNS].values), columns=FEATURE_COLUMNS), 50)
-            explainer = shap.KernelExplainer(model.predict_proba, bg_data)
-            shap_values = explainer.shap_values(X_scaled, nsamples=40)
+            explainer = get_shap_explainer(model, scaler)
+            if explainer is not None:
+                shap_values = explainer.shap_values(X_scaled, nsamples=20)
 
-            pred_idx = list(le.classes_).index(pred_label)
-            if isinstance(shap_values, list):
-                sv = shap_values[pred_idx][0]
+                pred_idx = list(le.classes_).index(pred_label)
+                if isinstance(shap_values, list):
+                    sv = shap_values[pred_idx][0]
+                else:
+                    sv = shap_values[0, :, pred_idx] if shap_values.ndim == 3 else shap_values[0]
+
+                shap_df = pd.DataFrame({
+                    "Feature": FEATURE_COLUMNS,
+                    "SHAP Value": sv,
+                    "Abs SHAP": np.abs(sv),
+                }).sort_values("Abs SHAP", ascending=True)
+
+                colors = ["#ef4444" if v > 0 else "#38bdf8" for v in shap_df["SHAP Value"]]
+                fig_shap = go.Figure(go.Bar(
+                    x=shap_df["SHAP Value"], y=shap_df["Feature"],
+                    orientation="h", marker_color=colors,
+                    text=[f"{v:+.3f}" for v in shap_df["SHAP Value"]], textposition="outside",
+                ))
+                fig_shap.update_layout(
+                    height=250, template="plotly_dark",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    title=f"Marginal Impact on {pred_label} Class Probability",
+                    xaxis_title="Directional Influence (Log-Odds)",
+                    margin=dict(l=100, r=40, t=40, b=20),
+                )
+                st.plotly_chart(fig_shap, use_container_width=True, config={"displayModeBar": False})
+                st.caption("🔴 Red = Pushes toward this risk level | 🔵 Blue = Pushes away")
             else:
-                sv = shap_values[0, :, pred_idx] if shap_values.ndim == 3 else shap_values[0]
-
-            shap_df = pd.DataFrame({
-                "Feature": FEATURE_COLUMNS,
-                "SHAP Value": sv,
-                "Abs SHAP": np.abs(sv),
-            }).sort_values("Abs SHAP", ascending=True)
-
-            colors = ["#ef4444" if v > 0 else "#38bdf8" for v in shap_df["SHAP Value"]]
-            fig_shap = go.Figure(go.Bar(
-                x=shap_df["SHAP Value"], y=shap_df["Feature"],
-                orientation="h", marker_color=colors,
-                text=[f"{v:+.3f}" for v in shap_df["SHAP Value"]], textposition="outside",
-            ))
-            fig_shap.update_layout(
-                height=250, template="plotly_dark",
-                title=f"Marginal Impact on {pred_label} Class Probability",
-                xaxis_title="Directional Influence (Log-Odds)",
-                margin=dict(l=100, r=40, t=40, b=20),
-            )
-            st.plotly_chart(fig_shap, use_container_width=True)
-            st.caption("🔴 Red = Pushes toward this risk level | 🔵 Blue = Pushes away")
+                st.info("SHAP explainer initializing...")
         except Exception as e:
             st.warning(f"SHAP attribution notice: {e}")
 
@@ -1689,19 +1671,50 @@ def render_model_comparison():
     fig.update_layout(barmode="group", height=340, template="plotly_dark",
                       title="Metric Comparison Across Candidate Architectures", yaxis_range=[0.95, 1.0],
                       margin=dict(l=40, r=20, t=40, b=20))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # Confusion matrices
-    st.markdown("**Confusion Matrices:**")
-    cols = st.columns(len(model_names))
+    # Confusion matrices — Unified side-by-side comparison (Fixed cramped display)
+    st.markdown("#### 🎯 Architectural Confusion Matrices")
+    st.caption("Normalized class prediction distribution across test partitions (Actual vs Predicted).")
+
+    fig_cm = make_subplots(
+        rows=1, cols=len(model_names),
+        subplot_titles=[f"<b>{name}</b>" for name in model_names],
+        horizontal_spacing=0.08
+    )
+
+    labels = comparison["class_labels"]
     for i, name in enumerate(model_names):
-        with cols[i]:
-            cm = np.array(comparison["models"][name]["confusion_matrix"])
-            labels = comparison["class_labels"]
-            fig_cm = px.imshow(cm, labels=dict(x="Predicted", y="Actual", color="Count"),
-                               x=labels, y=labels, text_auto=True, color_continuous_scale="Blues")
-            fig_cm.update_layout(height=240, title=name, margin=dict(l=20, r=20, t=40, b=20))
-            st.plotly_chart(fig_cm, use_container_width=True)
+        cm = np.array(comparison["models"][name]["confusion_matrix"])
+        text_cm = [[str(val) for val in row] for row in cm]
+        fig_cm.add_trace(
+            go.Heatmap(
+                z=cm,
+                x=labels,
+                y=labels,
+                text=text_cm,
+                texttemplate="%{text}",
+                textfont=dict(size=14, color="white", family="Inter, sans-serif"),
+                colorscale="Blues",
+                showscale=(i == len(model_names) - 1),
+                colorbar=dict(title="Count", len=0.85, thickness=12) if (i == len(model_names) - 1) else None,
+            ),
+            row=1, col=i + 1
+        )
+        fig_cm.update_xaxes(title_text="Predicted", row=1, col=i + 1, tickfont=dict(size=11), tickangle=0)
+        if i == 0:
+            fig_cm.update_yaxes(title_text="Actual", row=1, col=i + 1, tickfont=dict(size=11))
+        else:
+            fig_cm.update_yaxes(showticklabels=False, row=1, col=i + 1)
+
+    fig_cm.update_layout(
+        height=340,
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=50, r=40, t=50, b=40),
+    )
+    st.plotly_chart(fig_cm, use_container_width=True, config={"displayModeBar": False})
 
 
 # ──────────────────────────────────────────────
@@ -1732,7 +1745,7 @@ def render_knowledge_graph():
         st.caption("Drag, zoom, and click any node to trace code calls, imports, and dependencies.")
         with open(graph_html_path, "r", encoding="utf-8") as f:
             html_content = f.read()
-        components.html(html_content, height=650, scrolling=True)
+        components.html(html_content, height=760, scrolling=True)
     else:
         st.info("Run `graphify` to export `graph.html`.")
 
@@ -1827,7 +1840,7 @@ def main():
         <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">CRASH CONNECT</div>
         <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #38bdf8;">Guardian on Wheels</div>
         <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Crisis Alert Tech System (CATS)</div>
-        <div style="margin-top: 6px;"><span class="version-badge">{_APP_VERSION} WOW</span></div>
+        <div style="margin-top: 6px;"><span class="version-badge">{_APP_VERSION} PRODUCTION</span></div>
     </div>
     """, unsafe_allow_html=True)
     st.sidebar.markdown("---")
@@ -1872,7 +1885,7 @@ def main():
         <div class="diag-row"><span>LLM Engine:</span><span class="diag-val">{llm_diag}</span></div>
         <div class="diag-row"><span>Telemetry Cache:</span><span class="diag-val">{len(df):,} Records</span></div>
         <div class="diag-row"><span>Stream Sync:</span><span class="diag-val" style="color: #34d399;">● Connected</span></div>
-        <div class="diag-row"><span>App Version:</span><span class="diag-val" style="color: #a78bfa;">{_APP_VERSION} WOW</span></div>
+        <div class="diag-row"><span>App Version:</span><span class="diag-val" style="color: #a78bfa;">{_APP_VERSION} Production</span></div>
     </div>
     """, unsafe_allow_html=True)
 
