@@ -1,211 +1,233 @@
-# 🚗 CATS AI Safety Bot v2.1 (Top 1 Edition)
+# 🚗 CATS AI Safety Bot — Crisis Alert Tech System
 
-**Crisis Alert Tech System — AI-Powered Vehicle Telemetry Analysis & Safety Monitoring**
+**Autonomous Vehicle Telematics Analysis & Real-Time Safety Risk Monitoring**
 
-A production-grade prototype AI safety assistant that analyses vehicle telemetry, identifies safety risks, maps GPS telematics routes, explains alerts with SHAP attribution, exports forensic incident dossiers, and answers questions using Groq conversational AI.
+A production-grade prototype AI safety assistant that ingests multi-sensor vehicle telemetry, classifies safety risk in real time (`NORMAL`, `WARNING`, `CRITICAL`), isolates abnormal sensor spikes via unsupervised anomaly detection, provides mathematical SHAP explainability, maps geospatial routes, and answers operator inquiries through conversational AI.
 
-Built as part of the CRASH CONNECT AI/ML Internship Assessment.
+Built for the **CRASH CONNECT AI/ML Internship Practical Assessment** — *Guardian on Wheels*.
 
 ---
 
-## 🎯 Submission Kit
+## 🌟 Key Capabilities
 
-| Resource | Document | Purpose |
+| Capability | Technical Implementation | Impact |
 |---|---|---|
-| 🎬 **Demo Video Script** | [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md) | Timed 3–5 min scene-by-scene recording walkthrough |
-| 📝 **Assessment Form Answers** | [docs/SUBMISSION_ANSWERS.md](docs/SUBMISSION_ANSWERS.md) | Comprehensive responses ready for Google Form submission |
-| 🏗️ **Architecture Document** | [docs/architecture.md](docs/architecture.md) | Full data flow & system design |
-| 🔬 **ML Methodology** | [docs/ml_approach.md](docs/ml_approach.md) | Multi-model benchmarking, SHAP, and Anomaly Detection |
+| **Multi-Model Risk Classifier** | Gradient Boosting (Production) vs Random Forest vs SVM | **99.94% Accuracy** and **0.9978 CV F1** on holdout test set |
+| **Unsupervised Anomaly Layer** | Isolation Forest trained strictly on nominal driving envelope | Detects **95.2% of Critical incidents** as multivariate outliers |
+| **Dual-Tier Explainability** | SHAP (`KernelExplainer`) attribution + Deterministic physical rule engine | Transparent directional log-odds marginal contributions per sensor |
+| **Conversational Safety AI** | Groq API (`qwen/qwen3.8-27b`) with live telemetry context injection | Sub-second conversational vehicle safety analysis with offline fallback |
+| **Geospatial Route Mapping** | Interactive Pydeck 3D telematics map | Visualizes vehicle trails, speed zones, incident pins, and GPS dead zones |
+| **Incident Investigation Dossier** | One-click forensic docket generator | Formatted emergency dispatch briefs with sensor snapshots and action protocols |
+| **Active Learning Feedback Loop** | Operator false alarm tagging and dynamic model retraining | Continuous active learning pipeline that adjusts model decision weights |
+| **Codebase Knowledge Graph** | Graphify AST extraction & community clustering | Embedded 2D/3D interactive network mapping all project code and call hierarchies |
 
 ---
 
-## ✨ Features
-
-| Feature | Description |
-|---|---|
-| 📊 **Dashboard & Gauges** | Real-time animated gauges, delta indicators, and risk distribution |
-| 🗺️ **GPS Route Telematics** | Interactive Pydeck map showing vehicle breadcrumb trails & incident spots |
-| 🔴 **Real-Time Simulation** | Dynamic streaming telemetry generation with instant ML inference |
-| 🚨 **Alerts & Timeline** | Severity-colored scatter timeline with expandable alert cards |
-| 📄 **Forensic Incident Dossier** | 1-click official incident docket export with action protocols |
-| 💬 **AI Conversational Chat** | Groq API (Qwen 27B / Llama 3.3) with quick-prompt chips |
-| 🎛️ **Simulator + SHAP** | Interactive sliders with mathematical SHAP attribution plots |
-| 🏆 **Multi-Model Benchmark** | Side-by-side Gradient Boosting (99.9%) vs RF vs SVM |
-| 🔮 **Anomaly Detection** | Unsupervised Isolation Forest catching 95.2% of critical anomalies |
-| 🌐 **Codebase Graph (Graphify)** | Interactive 2D/3D network topology and architectural community clusters |
-| 📝 **Feedback & Retraining** | False alarm audit trail and active learning model retraining |
-
----
-
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                     CATS AI Safety Bot v2.0                          │
-│                      (Streamlit Web App)                             │
-├──────────┬───────────┬──────────┬───────────┬──────────┬────────────┤
-│Dashboard │ Real-Time │  Alerts  │  AI Chat  │Simulator │  Model     │
-│ (Gauges) │ Simulation│ Timeline │(Groq/OR)  │ + SHAP   │ Comparison │
-├──────────┴───────────┴──────────┴───────────┴──────────┴────────────┤
-│                        Core Engine                                   │
-│ ┌───────────────┐ ┌──────────────┐ ┌────────────┐ ┌──────────────┐  │
-│ │ Gradient      │ │ Isolation    │ │ SHAP       │ │ Groq /       │  │
-│ │ Boosting      │ │ Forest       │ │ Explainer  │ │ OpenRouter   │  │
-│ │ Classifier    │ │ Anomaly Det. │ │            │ │ LLM Chat     │  │
-│ └───────────────┘ └──────────────┘ └────────────┘ └──────────────┘  │
-│ ┌────────────────────────────────────────────────────────────────┐   │
-│ │                  Data Layer (Pandas)                           │   │
-│ │ telemetry_data.csv │ classifier.pkl │ anomaly_detector.pkl     │   │
-│ └────────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                  CATS AI SAFETY BOT — MISSION CONTROL (STREAMLIT)            │
+├─────────────┬──────────────┬──────────────┬─────────────┬────────────────────┤
+│  Dashboard  │  Real-Time   │   Alerts &   │   AI Chat   │ Simulator + SHAP   │
+│  & HUD      │  Simulation  │   Timeline   │  (Groq AI)  │ Attribution        │
+├─────────────┴──────────────┴──────────────┴─────────────┴────────────────────┤
+│                        DUAL-TIER AI INFERENCE ENGINE                         │
+│  ┌─────────────────────────┐  ┌───────────────────────┐  ┌─────────────────┐ │
+│  │ Gradient Boosting       │  │ Isolation Forest      │  │ SHAP Game-      │ │
+│  │ Classifier (Supervised) │  │ Anomaly Core          │  │ Theoretic Factor│ │
+│  │ 99.94% Test Accuracy    │  │ (Unsupervised Outlier)│  │ Attribution     │ │
+│  └────────────┬────────────┘  └───────────┬───────────┘  └────────┬────────┘ │
+│               └─────────────┬─────────────┘                       │          │
+│                             ▼                                     ▼          │
+│                [Consensus Verdict: NORMAL / WARNING / CRITICAL]              │
+│                             │                                                │
+│                             ▼                                                │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  Deterministic Rule Explanations & Forensic Dossier Generator          │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                         TELEMETRY DATA & ASSET LAYER                         │
+│  telemetry_data.csv (8,000 Readings) │ classifier.pkl │ anomaly_detector.pkl │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Installation & Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- (Optional) Groq API key for AI chat — [Get free key](https://console.groq.com)
+* Python 3.10 or 3.11
+* (Optional) Free Groq API Key from [console.groq.com](https://console.groq.com) for AI conversational features.
 
-### Steps
-
+### Step 1: Clone the Repository
 ```bash
-# 1. Clone the repository
-git clone https://github.com/<your-username>/cats-ai-safety-bot.git
-cd cats-ai-safety-bot
-
-# 2. Create and activate virtual environment
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Generate dataset
-python data/generate_dataset.py
-
-# 5. Train ML models (single model)
-python models/train.py
-
-# 6. Train multi-model comparison
-python models/train_compare.py
-
-# 7. Train anomaly detector
-python models/anomaly.py
-
-# 8. (Optional) Set API keys for AI chat
-set GROQ_API_KEY=gsk_your_key_here
-# Or:
-set OPENROUTER_API_KEY=sk-or-your_key_here
-
-# 9. Launch the app
-streamlit run app/app.py
+git clone https://github.com/<your-username>/crash-connect-cats.git
+cd crash-connect-cats
 ```
 
-The app opens at **http://localhost:8501**.
+### Step 2: Create and Activate Virtual Environment
+```bash
+# Windows:
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# macOS / Linux:
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### Step 3: Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Configure Environment Variables (Optional for AI Chat)
+Copy the example environment file and add your Groq API key:
+```bash
+# Windows:
+copy .env.example .env
+
+# macOS / Linux:
+cp .env.example .env
+```
+Open `.env` and paste your key:
+```env
+GROQ_API_KEY=gsk_your_groq_api_key_here
+```
+*(Note: If no API key is provided, the chat automatically operates in offline rule-based mode).*
+
+### Step 5: Launch the Application
+```bash
+streamlit run app/app.py
+```
+The application will open automatically in your browser at `http://localhost:8501`.
+
+> **Note:** Pre-trained production model weights (`models/classifier.pkl`, `models/anomaly_detector.pkl`) and the full 8,000-reading dataset are bundled in the repository. You can launch and demo immediately without waiting for training.
 
 ---
 
 ## 📂 Project Structure
 
 ```
-├── README.md                         # This file
+├── README.md                         # Master technical documentation
 ├── requirements.txt                  # Python dependencies
-├── .gitignore
+├── .env.example                      # Template for API keys
+├── .gitignore                        # Git ignore specifications
+│
+├── .streamlit/
+│   └── config.toml                   # Executive dark cockpit styling theme
 │
 ├── app/
-│   └── app.py                        # Main Streamlit app (7 pages)
+│   ├── __init__.py
+│   └── app.py                        # 8-page Streamlit telematics cockpit
 │
 ├── data/
-│   ├── generate_dataset.py           # Telemetry data generator
-│   ├── telemetry_data.csv            # 8,000-row dataset
-│   └── README.md                     # Data dictionary
+│   ├── __init__.py
+│   ├── README.md                     # Schema and feature dictionary
+│   ├── generate_dataset.py           # Parametric telemetry simulation script
+│   └── telemetry_data.csv            # 8,000 synthetic telematics observations
 │
 ├── models/
-│   ├── train.py                      # Single model training
-│   ├── train_compare.py              # Multi-model comparison
-│   ├── evaluate.py                   # Evaluation plots
-│   ├── anomaly.py                    # Isolation Forest training
-│   ├── classifier.pkl                # Best model (Gradient Boosting)
-│   ├── scaler.pkl                    # Feature scaler
-│   ├── anomaly_detector.pkl          # Isolation Forest model
-│   ├── model_comparison.json         # Comparison metrics
-│   └── metrics.json                  # Evaluation metrics
+│   ├── __init__.py
+│   ├── train.py                      # Single-model baseline training script
+│   ├── train_compare.py              # Multi-model benchmarking script (GB, RF, SVM)
+│   ├── evaluate.py                   # Plot generator (confusion matrix, feature imp.)
+│   ├── anomaly.py                    # Isolation Forest anomaly detector training
+│   ├── classifier.pkl                # Production Gradient Boosting model
+│   ├── scaler.pkl                    # Feature standard scaler
+│   ├── anomaly_detector.pkl          # Trained Isolation Forest model
+│   ├── anomaly_scaler.pkl            # Anomaly feature scaler
+│   ├── model_comparison.json         # Cross-validation benchmark metrics
+│   ├── metrics.json                  # Baseline evaluation metrics
+│   ├── confusion_matrix.png          # Confusion matrix visualization
+│   └── feature_importance.png        # Global feature importance plot
 │
 ├── utils/
-│   ├── config.py                     # Thresholds & configuration
-│   ├── telemetry.py                  # Data processing & explanations
-│   └── llm.py                        # Groq/OpenRouter chat integration
+│   ├── __init__.py
+│   ├── config.py                     # Physical thresholds & safety bounds
+│   ├── telemetry.py                  # Statistical processors & explanation engine
+│   └── llm.py                        # Groq LLM integration with prompt grounding
 │
 ├── tests/
-│   └── test_classifier.py            # Unit tests (12 tests)
+│   ├── __init__.py
+│   └── test_classifier.py            # 12 automated unit tests (Pytest)
 │
-└── docs/
-    ├── architecture.md               # System architecture
-    └── ml_approach.md                 # ML methodology & evaluation
+└── graphify-out/
+    ├── GRAPH_REPORT.md               # Codebase audit & community detection report
+    ├── graph.html                    # 2D/3D interactive network knowledge graph
+    └── graph.json                    # AST dependency extraction graph data
 ```
 
 ---
 
-## 🤖 ML Approach
+## 🤖 Machine Learning Methodology & Benchmarks
 
-### Multi-Model Comparison
+### 1. Multi-Model Architecture Comparison
+To avoid heuristic bias, three distinct classification paradigms were trained and evaluated on an 80/20 stratified split reinforced by **5-Fold Stratified Cross-Validation**:
 
-| Model | Accuracy | F1 | CV F1 |
-|---|---|---|---|
-| **🏆 Gradient Boosting** | **99.94%** | **99.94%** | **99.78%** |
-| Random Forest | 99.31% | 99.31% | 99.57% |
-| SVM (RBF) | 97.12% | 97.18% | 97.37% |
+| Architecture | Test Accuracy | Weighted F1 | 5-Fold CV F1 Score | Training Latency |
+|---|---|---|---|---|
+| **🏆 Gradient Boosting (Production)** | **99.94%** | **0.9994** | **0.9978 ± 0.0012** | 4.18s |
+| Random Forest (Bagging Baseline) | 99.31% | 0.9931 | 0.9957 ± 0.0016 | 0.38s |
+| Support Vector Machine (RBF Kernel) | 97.12% | 0.9718 | 0.9737 ± 0.0033 | 0.58s |
 
-### Explainability Stack
-1. **SHAP waterfall plots** — per-prediction feature contributions
-2. **Rule-based explanations** — human-readable threshold checks
-3. **Feature importance** — global model-level ranking
+* **Why Gradient Boosting Won:** Gradient Boosting sequentially optimizes decision trees over pseudo-residuals, creating sharper boundaries around complex multi-sensor warning states (such as simultaneous moderate speed combined with hard braking).
+* It achieved near-flawless generalization: **only 1 misclassification out of 1,600 holdout samples**.
 
-### Anomaly Detection
-- Isolation Forest trained on NORMAL data only
-- Catches 95.2% of CRITICAL readings as anomalous
+### 2. Dual-Tier Outlier Defense (Isolation Forest)
+Supervised models cannot reliably flag unseen edge cases. To protect vehicle occupants against zero-day failures, an unsupervised **Isolation Forest** was trained exclusively on nominal driving data (4,908 `NORMAL` samples with 5% contamination).
+* **Validation Outcome:** When tested across the full dataset, the Isolation Forest successfully isolated **95.2% of Critical emergency readings** as multivariate anomalies, providing defense-in-depth.
 
-See [docs/ml_approach.md](docs/ml_approach.md) for full details.
-
----
-
-## 💬 AI Chat
-
-The chatbot supports:
-- **AI Mode** (Groq/OpenRouter) — natural language understanding with live telemetry context
-- **Rule Mode** — keyword-matching fallback (no API key needed)
-
-Example questions:
-- "What is the current vehicle status?"
-- "Why was this alert triggered?"
-- "Is it safe to drive?"
-- "Show me the speed history"
-- "What does a high impact score mean?"
+### 3. Explainability Stack
+* **SHAP (KernelExplainer):** Computes game-theoretic marginal contributions per feature for each prediction. Directional waterfall bars highlight whether a sensor pushed the probability towards or away from danger.
+* **Deterministic Threshold Engine:** Generates plain-English explanations mapped against physical vehicle safety limits (e.g., *Speed > 140 km/h, G-force > 7.0 g, Impact > 0.7*).
 
 ---
 
-## ⚠️ Limitations
+## 🗺️ Application Tour (8 Interactive Pages)
 
-1. Simulated data only — not trained on real vehicle telemetry
-2. No temporal modeling — each reading classified independently
-3. Simplified features — real vehicles have hundreds of CAN-bus signals
-4. AI chat requires API key — falls back to rule-based without one
+1. **📊 Dashboard**: Heads-Up Display (HUD) top bar, glassmorphic metric cards, animated Plotly gauges, Pydeck 3D GPS route map, and risk envelope pie charts.
+2. **🔴 Real-Time Sim**: Dynamic vehicle telemetry streaming generator with moving map updates and instant anomaly alerts across Normal, Dangerous, and Mixed scenarios.
+3. **🚨 Alerts & Timeline**: Scatter incident timeline, expandable alert cards, false alarm tagging, and one-click **Forensic Incident Dossier** generator.
+4. **💬 AI Chat**: Conversational safety assistant powered by Groq Qwen 27B / Llama models with quick-prompt chips.
+5. **🎛️ Simulator + SHAP**: Interactive slider sandbox with real-time SHAP factor attribution plots.
+6. **🏆 Model Comparison**: Detailed performance matrix comparing Gradient Boosting, Random Forest, and SVM with confusion matrices.
+7. **🌐 Knowledge Graph (Graphify)**: Embedded interactive 2D/3D codebase network mapping all 24 project files and AST call hierarchies.
+8. **📝 Feedback & Retrain**: Operator false alarm audit log and active learning pipeline that adjusts model weights on user feedback.
 
 ---
 
-## 🛠️ Tech Stack
+## 🧪 Automated Testing
 
-| Component | Technology |
-|---|---|
-| Core | Python 3.11, Pandas, NumPy |
-| ML | Scikit-learn (RF, GB, SVM, Isolation Forest) |
-| Explainability | SHAP |
-| Chat AI | Groq API / OpenRouter (Llama 3.3 70B) |
-| Web UI | Streamlit |
-| Visualization | Plotly |
-| Serialization | Joblib |
+The project includes an automated test suite of **12 unit tests** in `tests/test_classifier.py`:
+```bash
+pytest tests/test_classifier.py -v
+```
+**Test Coverage:**
+* ✅ Dataset schema, feature ranges, non-negative bounds, and class distributions.
+* ✅ Model serialization, label inverse-transformation, and inference stability.
+* ✅ Positive identification of nominal driving envelopes.
+* ✅ Positive identification of extreme critical collision scenarios.
+* ✅ Deterministic explanation rule generation.
+
+---
+
+## ⚠️ Limitations & Production Scaling Roadmap
+
+### Current Prototype Limitations
+1. **Simulated Telematics:** Synthetic data abstracts real-world sensor noise, voltage fluctuations, and weather degradation.
+2. **Discrete Time Slices:** Observations are evaluated independently without recurrent temporal sequence modeling (e.g., LSTMs or Temporal Transformers).
+3. **Feature Dimensionality:** Modern vehicles expose 500+ PID parameters via OBD-II/CAN-bus, abstracted here into 5 core indicators.
+
+### Roadmap to Fleet Production
+1. **Edge Inference:** Compile the Gradient Boosting model to ONNX runtime for sub-10ms execution on vehicle Telematics Control Units (TCUs / ARM Cortex).
+2. **Streaming Pipeline:** Replace batch CSV polling with Apache Kafka / MQTT broker ingesting telemetry at 50 Hz.
+3. **Temporal Trajectory Windows:** Implement a rolling 10-second Temporal Convolutional Network (TCN) to classify progressive mechanical wear before acute failures occur.
+
+---
+
+## 📜 License & Compliance
+
+Developed for the **CRASH CONNECT AI/ML Internship Practical Assessment**.
+All simulated data and algorithms are intended for prototype evaluation.
