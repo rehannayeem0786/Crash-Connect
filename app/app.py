@@ -1,16 +1,21 @@
 """
-CATS AI Safety Bot — Main Streamlit Application (v2.2 Executive Cockpit Edition)
+CATS AI Safety Bot — Main Streamlit Application (v3.0 WOW Edition)
 
 Upgraded Frontend Layout:
 - Mission-control dark cockpit styling with glassmorphism & accent glows
 - Real-time Automotive Telematics HUD Header (vehicle metadata, stream status, clock)
-- High-tech Glassmorphic Telemetry Cards with delta indicators
-- Multi-tier dynamic status banners with severity progress bars
+- Animated scanning gradient border on HUD, neon hover glows, fade-in & slide-up animations
+- High-tech Glassmorphic Telemetry Cards with delta indicators & inline SVG sparklines
+- Multi-tier dynamic status banners with custom gradient confidence bars & SVG confidence arc
 - Tabbed Cockpit View (Gauges & Trends, 3D Route Map, Diagnostics Matrix)
 - Interactive Pydeck map with glowing vehicle telemetry breadcrumbs
-- Quick-action prompt chips for instant Groq AI reasoning
+- Quick-action prompt chips styled as animated gradient pills
+- Custom chat message bubbles (bot glass vs user blue gradient) with typing indicator dots
 - 1-Click Forensic Incident Investigation Dossier Generator
 - Graphify 2D/3D Codebase Knowledge Graph viewer
+- Severity count badges on Alerts page
+- Footer system health strip on every page
+- Card entrance stagger animations
 """
 
 import streamlit as st
@@ -26,6 +31,7 @@ import json
 import os
 import sys
 import time
+import math
 from datetime import datetime, timezone
 
 # Add project root to path
@@ -51,28 +57,96 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# === Advanced Executive Cockpit CSS ===
+# ──────────────────────────────────────────────
+#  GLOBAL CONSTANTS
+# ──────────────────────────────────────────────
+_APP_VERSION = "v3.0"
+_APP_START_TIME = datetime.now(timezone.utc)
+
+# === Advanced Executive Cockpit CSS — v3.0 WOW Edition ===
 st.markdown("""
 <style>
-    /* Global Container Adjustments */
+    /* ═══════════ KEYFRAME ANIMATIONS ═══════════ */
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scanLine {
+        0%   { background-position: -300% 0; }
+        100% { background-position: 300% 0; }
+    }
+
+    @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%      { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    @keyframes typingBounce {
+        0%, 80%, 100% { transform: translateY(0); }
+        40%           { transform: translateY(-8px); }
+    }
+
+    @keyframes neonPulse {
+        0%, 100% { box-shadow: 0 0 5px rgba(59,130,246,0.4), 0 0 15px rgba(59,130,246,0.1); }
+        50%      { box-shadow: 0 0 15px rgba(59,130,246,0.7), 0 0 40px rgba(59,130,246,0.25); }
+    }
+
+    @keyframes gradientShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    @keyframes pulse-border {
+        0%   { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+        50%  { box-shadow: 0 0 25px rgba(239, 68, 68, 0.75); }
+        100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+    }
+
+    /* ═══════════ GLOBAL CONTAINER ═══════════ */
     .main .block-container {
         padding-top: 1rem;
-        padding-bottom: 2.5rem;
+        padding-bottom: 4rem;
         max-width: 1380px;
     }
-    
-    /* Heads-Up Display (HUD) Top Bar */
+
+    /* ═══════════ HEADS-UP DISPLAY (HUD) TOP BAR ═══════════ */
     .hud-header {
-        background: linear-gradient(90deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.85) 50%, rgba(15, 23, 42, 0.95) 100%);
-        border: 1px solid rgba(59, 130, 246, 0.25);
+        background: linear-gradient(90deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.88) 50%, rgba(15,23,42,0.97) 100%);
+        border: 1px solid rgba(59,130,246,0.25);
         border-radius: 14px;
         padding: 14px 22px;
         margin-bottom: 18px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.1);
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5), 0 0 15px rgba(59,130,246,0.1);
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.6s ease-out;
+    }
+    /* Animated gradient scanning border overlay */
+    .hud-header::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 14px;
+        padding: 1px;
+        background: linear-gradient(90deg, transparent, rgba(59,130,246,0.6), rgba(56,189,248,0.4), transparent);
+        background-size: 300% 100%;
+        animation: scanLine 4s linear infinite;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
     }
     .hud-title {
         font-size: 20px;
@@ -91,8 +165,8 @@ st.markdown("""
         margin-top: 2px;
     }
     .hud-pill {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(30,41,59,0.7);
+        border: 1px solid rgba(255,255,255,0.1);
         padding: 6px 14px;
         border-radius: 20px;
         font-size: 12px;
@@ -103,26 +177,53 @@ st.markdown("""
         gap: 6px;
     }
     .hud-pill-green {
-        border-color: rgba(16, 185, 129, 0.4);
-        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16,185,129,0.4);
+        background: rgba(16,185,129,0.1);
         color: #34d399;
     }
-    
-    /* Glassmorphic Telemetry Cards */
+    .hud-clock {
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 12px;
+        color: #38bdf8;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    /* Animated pulse dot next to LIVE STREAM */
+    .live-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #34d399;
+        border-radius: 50%;
+        animation: pulseDot 1.4s ease-in-out infinite;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+
+    /* ═══════════ GLASSMORPHIC TELEMETRY CARDS ═══════════ */
     .telemetry-card {
-        background: rgba(17, 24, 39, 0.8);
+        background: rgba(17,24,39,0.8);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
         padding: 16px 18px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.3s ease;
         margin-bottom: 8px;
+        animation: slideUp 0.5s ease-out both;
     }
     .telemetry-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(59, 130, 246, 0.5);
+        transform: translateY(-3px);
+        border-color: rgba(59,130,246,0.6);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 20px rgba(59,130,246,0.35), 0 0 40px rgba(59,130,246,0.1);
     }
+    /* Stagger animation delays for cards in a row */
+    .tcard-d1 { animation-delay: 0s; }
+    .tcard-d2 { animation-delay: 0.08s; }
+    .tcard-d3 { animation-delay: 0.16s; }
+    .tcard-d4 { animation-delay: 0.24s; }
+    .tcard-d5 { animation-delay: 0.32s; }
+
     .telemetry-label {
         font-size: 11px;
         font-weight: 700;
@@ -143,50 +244,54 @@ st.markdown("""
     }
     .delta-green { color: #10b981; }
     .delta-amber { color: #f59e0b; }
-    .delta-red { color: #ef4444; }
+    .delta-red   { color: #ef4444; }
 
-    /* Dynamic Status Banners */
+    /* Mini sparkline container inside telemetry card */
+    .sparkline-container {
+        margin-top: 6px;
+        height: 28px;
+        overflow: hidden;
+    }
+
+    /* ═══════════ DYNAMIC STATUS BANNERS ═══════════ */
     .status-normal-box {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.1) 100%);
-        border: 1px solid rgba(16, 185, 129, 0.6);
+        background: linear-gradient(135deg, rgba(16,185,129,0.25) 0%, rgba(5,150,105,0.1) 100%);
+        border: 1px solid rgba(16,185,129,0.6);
         color: #ffffff;
         padding: 18px 24px;
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 4px 20px rgba(16,185,129,0.2);
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
+        animation: slideUp 0.5s ease-out both;
     }
     .status-warning-box {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.1) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.7);
+        background: linear-gradient(135deg, rgba(245,158,11,0.25) 0%, rgba(217,119,6,0.1) 100%);
+        border: 1px solid rgba(245,158,11,0.7);
         color: #ffffff;
         padding: 18px 24px;
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+        box-shadow: 0 4px 20px rgba(245,158,11,0.25);
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
+        animation: slideUp 0.5s ease-out both;
     }
     .status-critical-box {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(185, 28, 28, 0.15) 100%);
-        border: 1px solid rgba(239, 68, 68, 0.85);
+        background: linear-gradient(135deg, rgba(239,68,68,0.35) 0%, rgba(185,28,28,0.15) 100%);
+        border: 1px solid rgba(239,68,68,0.85);
         color: #ffffff;
         padding: 18px 24px;
         border-radius: 12px;
-        box-shadow: 0 4px 25px rgba(239, 68, 68, 0.4);
+        box-shadow: 0 4px 25px rgba(239,68,68,0.4);
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
         animation: pulse-border 1.5s infinite;
-    }
-    @keyframes pulse-border {
-        0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
-        50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.75); }
-        100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
     }
     .status-title-text {
         font-size: 22px;
@@ -198,11 +303,146 @@ st.markdown("""
         color: #e2e8f0;
         margin-top: 2px;
     }
-    
-    /* Diagnostics Sidebar Box */
+
+    /* ═══════════ CUSTOM GRADIENT CONFIDENCE BAR ═══════════ */
+    .conf-bar-track {
+        background: rgba(30,41,59,0.6);
+        border-radius: 8px;
+        height: 18px;
+        overflow: hidden;
+        position: relative;
+        margin: 4px 0 6px 0;
+    }
+    .conf-bar-fill {
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.6s cubic-bezier(.4,0,.2,1);
+        position: relative;
+    }
+    .conf-bar-fill.green  { background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px rgba(16,185,129,0.5); }
+    .conf-bar-fill.amber  { background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+    .conf-bar-fill.red    { background: linear-gradient(90deg, #ef4444, #f87171); box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+    .conf-bar-fill.blue   { background: linear-gradient(90deg, #3b82f6, #60a5fa); box-shadow: 0 0 10px rgba(59,130,246,0.5); }
+    .conf-bar-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1px;
+    }
+
+    /* ═══════════ CHAT MESSAGE BUBBLES ═══════════ */
+    .chat-bubble-bot {
+        background: rgba(17,24,39,0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px 16px 16px 4px;
+        padding: 14px 18px;
+        margin: 8px 40px 8px 0;
+        color: #e2e8f0;
+        font-size: 14px;
+        line-height: 1.6;
+        animation: slideUp 0.35s ease-out both;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .chat-bubble-user {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border: none;
+        border-radius: 16px 16px 4px 16px;
+        padding: 14px 18px;
+        margin: 8px 0 8px 40px;
+        color: #ffffff;
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: right;
+        animation: slideUp 0.35s ease-out both;
+        box-shadow: 0 2px 12px rgba(59,130,246,0.3);
+    }
+    .chat-sender {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8;
+        margin-bottom: 4px;
+    }
+    .chat-sender-user {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: rgba(255,255,255,0.65);
+        margin-bottom: 4px;
+        text-align: right;
+    }
+
+    /* ═══════════ TYPING INDICATOR DOTS ═══════════ */
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 18px;
+        background: rgba(17,24,39,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px 16px 16px 4px;
+        margin: 8px 40px 8px 0;
+    }
+    .typing-indicator .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        animation: typingBounce 1.4s ease-in-out infinite;
+    }
+    .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ═══════════ QUICK PROMPT CHIPS ═══════════ */
+    .quick-chip {
+        display: inline-block;
+        background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.15));
+        border: 1px solid rgba(59,130,246,0.35);
+        border-radius: 24px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #93c5fd;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        animation: fadeIn 0.5s ease-out both;
+    }
+    .quick-chip:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 18px rgba(59,130,246,0.35);
+        background: linear-gradient(135deg, rgba(59,130,246,0.35), rgba(139,92,246,0.3));
+    }
+
+    /* ═══════════ SEVERITY BADGE PILLS ═══════════ */
+    .severity-badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+        animation: fadeIn 0.5s ease-out both;
+    }
+    .sev-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .sev-badge.critical { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.6); color: #f87171; }
+    .sev-badge.warning  { background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.6); color: #fbbf24; }
+    .sev-badge.normal   { background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.6); color: #34d399; }
+
+    /* ═══════════ DIAGNOSTICS SIDEBAR BOX ═══════════ */
     .sidebar-diag {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(15,23,42,0.6);
+        border: 1px solid rgba(255,255,255,0.08);
         border-radius: 10px;
         padding: 12px;
         margin-top: 15px;
@@ -218,8 +458,20 @@ st.markdown("""
         color: #e2e8f0;
         font-weight: 600;
     }
-    
-    /* Anomaly & AI Badges */
+
+    /* Sidebar version badge */
+    .version-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 10px;
+        letter-spacing: 0.5px;
+    }
+
+    /* ═══════════ ANOMALY & AI BADGES ═══════════ */
     .anomaly-badge {
         background: linear-gradient(135deg, #8b5cf6, #6d28d9);
         color: #ffffff;
@@ -241,8 +493,8 @@ st.markdown("""
         font-weight: 700;
         display: inline-block;
     }
-    
-    /* Terminal Dossier Box */
+
+    /* ═══════════ TERMINAL DOSSIER BOX ═══════════ */
     .dossier-box {
         background-color: #030712;
         border: 1px solid #1f2937;
@@ -254,6 +506,87 @@ st.markdown("""
         color: #e5e7eb;
         white-space: pre-wrap;
         line-height: 1.5;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    /* ═══════════ FOOTER SYSTEM HEALTH STRIP ═══════════ */
+    .footer-strip {
+        background: linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.85) 50%, rgba(15,23,42,0.95) 100%);
+        border-top: 1px solid rgba(59,130,246,0.2);
+        padding: 8px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 30px;
+        border-radius: 10px;
+        animation: fadeIn 0.6s ease-out both;
+    }
+    .footer-strip .footer-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .footer-strip .footer-val {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    /* ═══════════ NEON ACCENT GLOWS ═══════════ */
+    .neon-glow-blue {
+        animation: neonPulse 2.5s ease-in-out infinite;
+    }
+
+    /* Section entrance wrapper */
+    .section-fade {
+        animation: slideUp 0.5s ease-out both;
+    }
+
+    /* ═══════════ STREAMLIT TABS & CONTROLS POLISH ═══════════ */
+    div[data-baseweb="tab-list"] {
+        background: rgba(15, 23, 42, 0.7);
+        padding: 4px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        gap: 6px;
+    }
+    button[data-baseweb="tab"] {
+        border-radius: 8px !important;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        padding: 8px 18px !important;
+        transition: all 0.2s ease !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.2)) !important;
+        color: #60a5fa !important;
+        border: 1px solid rgba(59, 130, 246, 0.5) !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.3) !important;
+    }
+
+    /* Streamlit Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)) !important;
+        color: #e2e8f0 !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button:hover {
+        border-color: rgba(59, 130, 246, 0.8) !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.35) !important;
+        transform: translateY(-1px) !important;
+        color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        border-color: rgba(59, 130, 246, 0.8) !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -316,19 +649,90 @@ def detect_anomaly(features, iso_forest, anom_scaler):
     return pred == -1, float(score)
 
 
+def _build_sparkline_svg(values, width=100, height=24, color="#38bdf8"):
+    """Generate a tiny inline SVG sparkline from a list of numeric values."""
+    if not values or len(values) < 2:
+        return ""
+    vals = list(values)
+    mn, mx = min(vals), max(vals)
+    rng = mx - mn if mx != mn else 1
+    n = len(vals)
+    points = []
+    for i, v in enumerate(vals):
+        x = round(i / (n - 1) * width, 2)
+        y = round(height - ((v - mn) / rng) * (height - 2) - 1, 2)
+        points.append(f"{x},{y}")
+    pts_str = " ".join(points)
+    return (
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" '
+        f'xmlns="http://www.w3.org/2000/svg" style="display:block;">'
+        f'<polyline fill="none" stroke="{color}" stroke-width="1.5" '
+        f'stroke-linecap="round" stroke-linejoin="round" points="{pts_str}"/></svg>'
+    )
+
+
+def _build_confidence_arc_svg(pct, size=60, color="#34d399"):
+    """Build an SVG circle arc showing confidence percentage."""
+    r = (size - 6) / 2
+    cx = cy = size / 2
+    circumference = 2 * math.pi * r
+    offset = circumference * (1 - pct)
+    return (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" '
+        f'xmlns="http://www.w3.org/2000/svg">'
+        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>'
+        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{color}" stroke-width="5" '
+        f'stroke-dasharray="{circumference}" stroke-dashoffset="{offset}" '
+        f'stroke-linecap="round" transform="rotate(-90 {cx} {cy})" '
+        f'style="transition: stroke-dashoffset 0.6s ease;"/>'
+        f'<text x="{cx}" y="{cy + 4}" text-anchor="middle" fill="#f8fafc" '
+        f'font-size="12" font-weight="800" font-family="Inter,sans-serif">{pct:.0%}</text>'
+        f'</svg>'
+    )
+
+
+def _render_confidence_bar(label, prob, bar_class="blue"):
+    """Render a custom gradient confidence bar for a classification probability."""
+    pct = prob * 100
+    emoji = STATUS_EMOJIS.get(label, "")
+    return (
+        f'<div class="conf-bar-label"><span>{emoji} {label}</span><span>{prob:.1%}</span></div>'
+        f'<div class="conf-bar-track">'
+        f'<div class="conf-bar-fill {bar_class}" style="width:{pct}%;"></div>'
+        f'</div>'
+    )
+
+
+def _render_footer(record_count=0):
+    """Render the system health footer strip."""
+    utc_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    uptime_delta = datetime.now(timezone.utc) - _APP_START_TIME
+    uptime_min = int(uptime_delta.total_seconds() // 60)
+    st.markdown(f"""
+    <div class="footer-strip">
+        <div class="footer-item">🤖 <span class="footer-val">CATS AI Safety Bot {_APP_VERSION} WOW Edition</span></div>
+        <div class="footer-item">🧠 <span class="footer-val">Gradient Boosting Classifier</span></div>
+        <div class="footer-item">⏱️ Uptime: <span class="footer-val">{uptime_min}m</span></div>
+        <div class="footer-item">📊 Records: <span class="footer-val">{record_count:,}</span></div>
+        <div class="footer-item">🕐 <span class="footer-val">{utc_now}</span></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def render_hud(vehicle_id, latest, model_name="Gradient Boosting (99.94%)"):
-    """Render top automotive Heads-Up Display banner."""
+    """Render top automotive Heads-Up Display banner with live UTC clock and animated pulse dot."""
     status = latest.get("risk_label", "NORMAL")
     gps_active = latest.get("gps_status", 1) == 1
     lat = latest.get("latitude", 0)
     lon = latest.get("longitude", 0)
-    
+    utc_now = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
+
     st.markdown(f"""
-    <div class="hud-header">
+    <div class="hud-header neon-glow-blue">
         <div>
             <div class="hud-title">
                 <span>🚗</span> CATS TELEMATICS MISSION CONTROL
-                <span class="hud-pill hud-pill-green">● LIVE STREAM</span>
+                <span class="hud-pill hud-pill-green"><span class="live-dot"></span> LIVE STREAM</span>
             </div>
             <div class="hud-subtitle">CRASH CONNECT • CRISIS ALERT TECH SYSTEM • GUARDIAN ON WHEELS</div>
         </div>
@@ -337,37 +741,46 @@ def render_hud(vehicle_id, latest, model_name="Gradient Boosting (99.94%)"):
             <div class="hud-pill">📍 {lat:.4f}, {lon:.4f}</div>
             <div class="hud-pill">📡 {'🟢 GPS LOCK' if gps_active else '🔴 GPS LOST'}</div>
             <div class="hud-pill">🏆 {model_name}</div>
+            <div class="hud-pill"><span class="hud-clock">🕐 {utc_now}</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_executive_status_banner(status, pred_probs, is_anomaly=False, anom_score=0.0):
-    """Render high-impact automotive status banner with probability bar."""
+    """Render high-impact automotive status banner with SVG confidence arc."""
     emoji = STATUS_EMOJIS.get(status, "✅")
-    
+
     if status == STATUS_CRITICAL:
         box_class = "status-critical-box"
         subtext = "CRITICAL HAZARD DETECTED — Urgent Collision / Rollover Risk. Dispatch Standby."
+        arc_color = "#ef4444"
     elif status == STATUS_WARNING:
         box_class = "status-warning-box"
         subtext = "OPERATING WARNING — Parameter threshold exceeded. Advisory speed reduction recommended."
+        arc_color = "#f59e0b"
     else:
         box_class = "status-normal-box"
         subtext = "NOMINAL OPERATING ENVELOPE — All multi-sensor telemetry within safe ISO bounds."
-        
-    prob_str = f"Confidence: {pred_probs.get(status, 1.0):.1%}"
+        arc_color = "#10b981"
+
+    confidence = pred_probs.get(status, 1.0)
+    prob_str = f"Confidence: {confidence:.1%}"
     anom_html = f'<span class="anomaly-badge">🔮 ANOMALY OUTLIER ({anom_score:.3f})</span>' if is_anomaly else ""
-    
+    arc_svg = _build_confidence_arc_svg(confidence, size=58, color=arc_color)
+
     st.markdown(f"""
     <div class="{box_class}">
         <div>
             <div class="status-title-text">{emoji} VEHICLE SAFETY STATUS: {status} {anom_html}</div>
             <div class="status-sub-text">{subtext}</div>
         </div>
-        <div style="text-align: right;">
-            <div style="font-size: 18px; font-weight: 800;">{prob_str}</div>
-            <div style="font-size: 11px; opacity: 0.85;">Dual-Model AI Consensus</div>
+        <div style="text-align: right; display: flex; align-items: center; gap: 14px;">
+            {arc_svg}
+            <div>
+                <div style="font-size: 18px; font-weight: 800;">{prob_str}</div>
+                <div style="font-size: 11px; opacity: 0.85;">Dual-Model AI Consensus</div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -450,6 +863,14 @@ def render_telemetry_map(vehicle_df, latest_reading):
     )
 
     curr_df = pd.DataFrame([latest_reading])
+    curr_halo = pdk.Layer(
+        "ScatterplotLayer",
+        data=curr_df,
+        get_position="[longitude, latitude]",
+        get_color=[56, 189, 248, 80],
+        get_radius=380,
+        pickable=False,
+    )
     curr_layer = pdk.Layer(
         "ScatterplotLayer",
         data=curr_df,
@@ -467,7 +888,7 @@ def render_telemetry_map(vehicle_df, latest_reading):
     )
 
     deck = pdk.Deck(
-        layers=[route_layer, points_layer, curr_layer],
+        layers=[route_layer, points_layer, curr_halo, curr_layer],
         initial_view_state=view_state,
         tooltip={
             "text": "Time: {timestamp}\nSpeed: {speed} km/h\nStatus: {risk_label}\nImpact: {impact_score}"
@@ -723,55 +1144,69 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
     # 2. Executive Status Banner
     render_executive_status_banner(latest["risk_label"], pred_probs, is_anomaly, anom_score)
 
-    # 3. High-Tech Glassmorphism Telemetry Cards
+    # 3. High-Tech Glassmorphism Telemetry Cards with Sparklines
     c1, c2, c3, c4, c5 = st.columns(5)
     avg_speed = vehicle_df["speed"].mean()
     speed_delta = latest["speed"] - avg_speed
     speed_delta_class = "delta-green" if latest["speed"] < 100 else ("delta-amber" if latest["speed"] < 140 else "delta-red")
-    
+
+    # Prepare sparkline data from last 20 readings
+    spark_df = vehicle_df.tail(20)
+    spark_speed = _build_sparkline_svg(spark_df["speed"].tolist(), color="#38bdf8")
+    spark_accel = _build_sparkline_svg(spark_df["acceleration"].tolist(), color="#f43f5e")
+    spark_impact = _build_sparkline_svg(spark_df["impact_score"].tolist(), color="#f59e0b")
+    spark_battery = _build_sparkline_svg(spark_df["battery_status"].tolist(), color="#10b981")
+
     with c1:
         st.markdown(f"""
-        <div class="telemetry-card">
+        <div class="telemetry-card tcard-d1">
             <div class="telemetry-label">🏎️ Speed Velocity</div>
             <div class="telemetry-val">{latest['speed']:.0f} <span style="font-size:14px;color:#94a3b8;">km/h</span></div>
             <div class="telemetry-delta {speed_delta_class}">{speed_delta:+.0f} km/h vs avg</div>
+            <div class="sparkline-container">{spark_speed}</div>
         </div>
         """, unsafe_allow_html=True)
     with c2:
         acc_class = "delta-green" if latest["acceleration"] < 4.0 else ("delta-amber" if latest["acceleration"] < 7.0 else "delta-red")
         st.markdown(f"""
-        <div class="telemetry-card">
+        <div class="telemetry-card tcard-d2">
             <div class="telemetry-label">⚡ G-Acceleration</div>
             <div class="telemetry-val">{latest['acceleration']:.1f} <span style="font-size:14px;color:#94a3b8;">g</span></div>
             <div class="telemetry-delta {acc_class}">Peak: {vehicle_df['acceleration'].max():.1f} g</div>
+            <div class="sparkline-container">{spark_accel}</div>
         </div>
         """, unsafe_allow_html=True)
     with c3:
         imp_class = "delta-green" if latest["impact_score"] < 0.4 else ("delta-amber" if latest["impact_score"] < 0.7 else "delta-red")
         st.markdown(f"""
-        <div class="telemetry-card">
+        <div class="telemetry-card tcard-d3">
             <div class="telemetry-label">💥 Impact Score</div>
             <div class="telemetry-val">{latest['impact_score']:.3f}</div>
             <div class="telemetry-delta {imp_class}">{'Nominal' if latest['impact_score']<0.4 else 'Collision Risk'}</div>
+            <div class="sparkline-container">{spark_impact}</div>
         </div>
         """, unsafe_allow_html=True)
     with c4:
         bat_class = "delta-green" if latest["battery_status"] > 30 else ("delta-amber" if latest["battery_status"] > 10 else "delta-red")
         st.markdown(f"""
-        <div class="telemetry-card">
+        <div class="telemetry-card tcard-d4">
             <div class="telemetry-label">🔋 Battery Pack</div>
             <div class="telemetry-val">{latest['battery_status']:.0f} <span style="font-size:14px;color:#94a3b8;">%</span></div>
             <div class="telemetry-delta {bat_class}">Range: ~{(latest['battery_status']*3.5):.0f} km</div>
+            <div class="sparkline-container">{spark_battery}</div>
         </div>
         """, unsafe_allow_html=True)
     with c5:
         gps_txt = "Active Lock" if latest["gps_status"] == 1 else "Signal Lost"
         gps_class = "delta-green" if latest["gps_status"] == 1 else "delta-red"
+        gps_pct = (vehicle_df["gps_status"] == 1).mean()
+        gps_spark = _build_sparkline_svg(spark_df["gps_status"].astype(float).tolist(), color="#34d399")
         st.markdown(f"""
-        <div class="telemetry-card">
+        <div class="telemetry-card tcard-d5">
             <div class="telemetry-label">📡 GPS Telematics</div>
             <div class="telemetry-val" style="font-size:20px;">{gps_txt}</div>
-            <div class="telemetry-delta {gps_class}">Fix: 8 Sats Locked</div>
+            <div class="telemetry-delta {gps_class}">Uptime: {gps_pct:.0%}</div>
+            <div class="sparkline-container">{gps_spark}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -813,8 +1248,11 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
             for exp in explanations:
                 st.markdown(f"- {exp}")
             st.markdown("#### 🤖 Model Probability Breakdown")
+            bar_html = ""
             for label, prob in sorted(pred_probs.items(), key=lambda x: -x[1]):
-                st.progress(prob, text=f"{label}: {prob:.1%}")
+                bar_cls = "red" if label == STATUS_CRITICAL else ("amber" if label == STATUS_WARNING else "green")
+                bar_html += _render_confidence_bar(label, prob, bar_cls)
+            st.markdown(f'<div class="section-fade">{bar_html}</div>', unsafe_allow_html=True)
 
     with tab_map:
         st.markdown("#### 🛰️ Live Geospatial Route Telemetry")
@@ -842,8 +1280,10 @@ def render_dashboard(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler)
 # ──────────────────────────────────────────────
 
 def render_realtime(model, scaler, le, iso_forest, anom_scaler):
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 🔴 Real-Time Dynamic Telemetry Stream")
     st.caption("Simulates continuous CAN-bus streaming data packets with sub-second ML inference and anomaly alerting.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
     with col_ctrl1:
@@ -917,6 +1357,19 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
     vehicle_df = df[df["vehicle_id"] == vehicle_id].sort_values("timestamp", ascending=False)
     alerts_df = vehicle_df[vehicle_df["risk_label"].isin([STATUS_WARNING, STATUS_CRITICAL])].head(30)
 
+    # ── Severity Count Badges ──
+    all_vehicle = df[df["vehicle_id"] == vehicle_id]
+    n_critical = int((all_vehicle["risk_label"] == STATUS_CRITICAL).sum())
+    n_warning = int((all_vehicle["risk_label"] == STATUS_WARNING).sum())
+    n_normal = int((all_vehicle["risk_label"] == STATUS_NORMAL).sum())
+    st.markdown(f"""
+    <div class="severity-badges">
+        <div class="sev-badge critical">🔴 {n_critical} Critical</div>
+        <div class="sev-badge warning">🟠 {n_warning} Warning</div>
+        <div class="sev-badge normal">🟢 {n_normal} Normal</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     if alerts_df.empty:
         st.success("✅ No active alerts for this vehicle. All historical records are NORMAL.")
         return
@@ -965,9 +1418,12 @@ def render_alerts(df, vehicle_id, model, scaler, le, iso_forest, anom_scaler):
                     st.caption(f"📍 GPS Fix: Lat {row['latitude']:.4f}, Lon {row['longitude']:.4f}")
             with c2:
                 st.markdown("**Classifier Consensus:**")
+                bar_html = ""
                 for label in [STATUS_CRITICAL, STATUS_WARNING, STATUS_NORMAL]:
                     if label in pred_probs:
-                        st.progress(pred_probs[label], text=f"{label}: {pred_probs[label]:.1%}")
+                        bar_cls = "red" if label == STATUS_CRITICAL else ("amber" if label == STATUS_WARNING else "green")
+                        bar_html += _render_confidence_bar(label, pred_probs[label], bar_cls)
+                st.markdown(bar_html, unsafe_allow_html=True)
 
             ca, cb, _ = st.columns([1, 1, 2])
             with ca:
@@ -1004,43 +1460,76 @@ def render_chat(df, vehicle_id, model, scaler, le):
         "rule_based": "📋 Rule-based mode (Set GROQ_API_KEY in .env for full AI chat)",
     }
 
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 💬 Conversational Safety Intelligence")
     st.markdown(f'<span class="ai-badge">{badge[backend]}</span>', unsafe_allow_html=True)
     st.caption(f"Real-time safety copilot analyzing telemetry streams for **{vehicle_id}**.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Quick prompt chips
+    # Quick prompt chips styled as animated gradient pills
     st.markdown("**💡 Quick Telematics Inquiries:**")
     qc1, qc2, qc3, qc4 = st.columns(4)
     quick_prompt = None
     with qc1:
-        if st.button("⚡ Safe to drive?"):
+        if st.button("⚡ Safe to drive?", key="qp_safe"):
             quick_prompt = "Is this vehicle currently safe to drive? Give a clear safety assessment with specific metrics."
     with qc2:
-        if st.button("🚨 Assess risk"):
+        if st.button("🚨 Assess risk", key="qp_risk"):
             quick_prompt = "Assess the current vehicle risk level and explain why this classification was assigned."
     with qc3:
-        if st.button("💥 Crash impact"):
+        if st.button("💥 Crash impact", key="qp_crash"):
             quick_prompt = "Analyze the vehicle impact score and acceleration for any crash or collision risk."
     with qc4:
-        if st.button("🔋 Battery & GPS"):
+        if st.button("🔋 Battery & GPS", key="qp_bat"):
             quick_prompt = "Evaluate the vehicle battery status and GPS connectivity uptime."
+
+    # Render quick-chip pill decorators
+    st.markdown("""
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+        <span class="quick-chip" style="animation-delay: 0s;">⚡ Safety Check</span>
+        <span class="quick-chip" style="animation-delay: 0.1s;">🚨 Risk Assessment</span>
+        <span class="quick-chip" style="animation-delay: 0.2s;">💥 Crash Analysis</span>
+        <span class="quick-chip" style="animation-delay: 0.3s;">🔋 Systems Health</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "assistant", "content": f"👋 Greetings Operator! I am the CATS AI Safety Copilot monitoring **{vehicle_id}**. I am continuously inspecting CAN-bus telemetry, crash parameters, and battery health. How can I assist your fleet review today?"}
         ]
 
+    # Render chat history with custom bubbles
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        if msg["role"] == "assistant":
+            st.markdown(f"""
+            <div class="chat-sender">🤖 CATS AI COPILOT</div>
+            <div class="chat-bubble-bot">{msg["content"]}</div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="chat-sender-user">👤 OPERATOR</div>
+            <div class="chat-bubble-user">{msg["content"]}</div>
+            """, unsafe_allow_html=True)
 
     input_prompt = st.chat_input("Ask about vehicle safety, telemetry, alerts...")
     active_prompt = quick_prompt if quick_prompt else input_prompt
 
     if active_prompt:
         st.session_state.messages.append({"role": "user", "content": active_prompt})
-        with st.chat_message("user"):
-            st.markdown(active_prompt)
+        st.markdown(f"""
+        <div class="chat-sender-user">👤 OPERATOR</div>
+        <div class="chat-bubble-user">{active_prompt}</div>
+        """, unsafe_allow_html=True)
+
+        # Show typing indicator while processing
+        typing_placeholder = st.empty()
+        typing_placeholder.markdown("""
+        <div class="typing-indicator">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
         vehicle_df = df[df["vehicle_id"] == vehicle_id].sort_values("timestamp")
         latest = vehicle_df.iloc[-1] if len(vehicle_df) else pd.Series()
@@ -1049,15 +1538,19 @@ def render_chat(df, vehicle_id, model, scaler, le):
 
         response = None
         if backend != "rule_based":
-            with st.spinner("🧠 Synthesizing telematics telemetry with Groq AI..."):
-                response = llm_chat(st.session_state.messages, vehicle_data, stats)
+            response = llm_chat(st.session_state.messages, vehicle_data, stats)
 
         if response is None or response.startswith("⚠️"):
             response = handle_chat_rulebased(active_prompt, df, vehicle_id, model, scaler, le)
 
+        # Clear typing indicator and show response
+        typing_placeholder.empty()
+
         st.session_state.messages.append({"role": "assistant", "content": response})
-        with st.chat_message("assistant"):
-            st.markdown(response)
+        st.markdown(f"""
+        <div class="chat-sender">🤖 CATS AI COPILOT</div>
+        <div class="chat-bubble-bot">{response}</div>
+        """, unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────
@@ -1065,8 +1558,10 @@ def render_chat(df, vehicle_id, model, scaler, le):
 # ──────────────────────────────────────────────
 
 def render_simulator(model, scaler, le, iso_forest, anom_scaler):
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 🎛️ Telemetry Simulator & SHAP Factor Attribution")
     st.caption("Adjust real-time sensor parameters to observe classification boundaries, SHAP factor attribution, and anomaly scores.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
@@ -1097,9 +1592,12 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
             st.markdown(f"- {exp}")
 
         st.markdown("**📊 Multi-Class Prediction Probabilities:**")
+        bar_html = ""
         for label in [STATUS_CRITICAL, STATUS_WARNING, STATUS_NORMAL]:
             if label in pred_probs:
-                st.progress(pred_probs[label], text=f"{STATUS_EMOJIS.get(label, '')} {label}: {pred_probs[label]:.1%}")
+                bar_cls = "red" if label == STATUS_CRITICAL else ("amber" if label == STATUS_WARNING else "green")
+                bar_html += _render_confidence_bar(f"{STATUS_EMOJIS.get(label, '')} {label}", pred_probs[label], bar_cls)
+        st.markdown(f'<div class="section-fade">{bar_html}</div>', unsafe_allow_html=True)
 
     with shap_col:
         st.markdown("**🔬 Mathematical SHAP Attribution (KernelExplainer):**")
@@ -1154,7 +1652,9 @@ def render_simulator(model, scaler, le, iso_forest, anom_scaler):
 # ──────────────────────────────────────────────
 
 def render_model_comparison():
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 🏆 Architectural Model Benchmarking")
+    st.markdown('</div>', unsafe_allow_html=True)
     comparison = load_model_comparison()
 
     if comparison is None:
@@ -1209,8 +1709,10 @@ def render_model_comparison():
 # ──────────────────────────────────────────────
 
 def render_knowledge_graph():
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 🌐 Codebase Architecture & Knowledge Graph (via Graphify)")
     st.caption("Auto-generated knowledge graph mapping all 24 project files, AST call structures, god nodes, and community clusters.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     report_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "graphify-out", "GRAPH_REPORT.md")
     graph_html_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "graphify-out", "graph.html")
@@ -1245,7 +1747,9 @@ def render_knowledge_graph():
 # ──────────────────────────────────────────────
 
 def render_feedback():
+    st.markdown('<div class="section-fade">', unsafe_allow_html=True)
     st.markdown("### 📝 Active Learning & False Alarm Audit Log")
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if os.path.exists(FEEDBACK_PATH):
         feedback_df = pd.read_csv(FEEDBACK_PATH)
@@ -1317,12 +1821,13 @@ def render_feedback():
 
 def main():
     # Sidebar
-    st.sidebar.markdown("""
+    st.sidebar.markdown(f"""
     <div style="text-align: center; padding: 10px 0 15px 0;">
         <span style="font-size: 42px;">🚗</span>
         <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">CRASH CONNECT</div>
         <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #38bdf8;">Guardian on Wheels</div>
         <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Crisis Alert Tech System (CATS)</div>
+        <div style="margin-top: 6px;"><span class="version-badge">{_APP_VERSION} WOW</span></div>
     </div>
     """, unsafe_allow_html=True)
     st.sidebar.markdown("---")
@@ -1355,8 +1860,10 @@ def main():
     # System Diagnostics Box
     backend = get_backend()
     llm_diag = f"Groq ({GROQ_MODEL})" if backend == "groq" else (f"OpenRouter ({OPENROUTER_MODEL})" if backend == "openrouter" else "Rule Engine")
-    
+
     st.sidebar.markdown("---")
+
+    # Enhanced sidebar info box
     st.sidebar.markdown(f"""
     <div class="sidebar-diag">
         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px;">⚙️ Telematics Diagnostics</div>
@@ -1365,6 +1872,7 @@ def main():
         <div class="diag-row"><span>LLM Engine:</span><span class="diag-val">{llm_diag}</span></div>
         <div class="diag-row"><span>Telemetry Cache:</span><span class="diag-val">{len(df):,} Records</span></div>
         <div class="diag-row"><span>Stream Sync:</span><span class="diag-val" style="color: #34d399;">● Connected</span></div>
+        <div class="diag-row"><span>App Version:</span><span class="diag-val" style="color: #a78bfa;">{_APP_VERSION} WOW</span></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1385,6 +1893,9 @@ def main():
         render_knowledge_graph()
     elif page == "📝 Feedback & Retrain":
         render_feedback()
+
+    # ── Footer System Health Strip (every page) ──
+    _render_footer(record_count=len(df))
 
 
 if __name__ == "__main__":
